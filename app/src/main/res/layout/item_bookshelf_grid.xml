@@ -16,9 +16,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingLeft="8dp"
+        android:paddingLeft="4dp"
         android:paddingTop="8dp"
-        android:paddingRight="8dp"
+        android:paddingRight="4dp"
         android:scrollbars="none"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -31,14 +31,14 @@
                 android:id="@+id/iv_cover"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="8dp"
+                android:layout_margin="4dp"
                 android:scaleType="centerCrop"
                 android:scrollbars="none"
                 android:src="@drawable/image_cover_default"
                 android:transitionName="img_cover"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:ignore="UnusedAttribute,ImageContrastCheck"
-                tools:layout_editor_absoluteX="8dp" />
+                tools:layout_editor_absoluteX="4dp" />
 
             <io.legado.app.ui.widget.text.BadgeView
                 android:id="@+id/bv_unread"
