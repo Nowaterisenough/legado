@@ -90,9 +90,9 @@ jobs:
         continue-on-error: true
         run: |
           if [ ${{ env.type }} == 'release' ]; then
-            typeName="原包名"
+            typeName=""
           else
-            typeName="共存"
+            typeName="_共存"
             sed "s/'.release'/'.releaseA'/" $GITHUB_WORKSPACE/app/build.gradle  -i
             sed 's/.release/.releaseA/'     $GITHUB_WORKSPACE/app/google-services.json -i
           fi
@@ -104,7 +104,7 @@ jobs:
           echo "修改APK文件名"
           mkdir -p ${{ github.workspace }}/apk/
           for file in `ls ${{ github.workspace }}/app/build/outputs/apk/*/*/*.apk`; do
-            mv "$file" ${{ github.workspace }}/apk/legado_${{ env.product }}_${{ env.VERSIONL }}_$typeName.apk
+            mv "$file" ${{ github.workspace }}/apk/legado_${{ env.product }}_${{ env.VERSIONL }}$typeName.apk
           done
           echo "移动mapping文件"
           mkdir -p ${{ github.workspace }}/mapping/
