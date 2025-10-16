@@ -27,6 +27,27 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="UnusedAttribute" />
 
+    <TextView
+        android:id="@+id/tv_update"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/bg_update_badge"
+        android:includeFontPadding="false"
+        android:paddingStart="5dp"
+        android:paddingTop="2dp"
+        android:paddingEnd="5dp"
+        android:paddingBottom="2dp"
+        android:scrollbars="none"
+        android:text="@string/update"
+        android:textColor="@android:color/white"
+        android:textSize="9sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SmallSp,RtlSymmetry" />
+
     <FrameLayout
         android:id="@+id/fl_has_new"
         android:layout_width="wrap_content"
@@ -54,35 +75,17 @@
         android:layout_marginTop="12dp"
         android:includeFontPadding="false"
         android:paddingLeft="2dp"
-        android:paddingBottom="2dp"
+        android:paddingBottom="4dp"
         android:scrollbars="none"
         android:singleLine="true"
         android:text="@string/book_name"
         android:textColor="@color/primaryText"
         android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@+id/tv_progress"
+        app:layout_constraintBottom_toTopOf="@+id/tv_author"
         app:layout_constraintLeft_toRightOf="@+id/iv_cover"
         app:layout_constraintRight_toLeftOf="@id/fl_has_new"
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="RtlHardcoded,RtlSymmetry" />
-
-    <TextView
-        android:id="@+id/tv_progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"
-        android:includeFontPadding="false"
-        android:paddingLeft="2dp"
-        android:paddingBottom="2dp"
-        android:scrollbars="none"
-        android:singleLine="true"
-        android:textSize="11sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/tv_author"
-        app:layout_constraintLeft_toRightOf="@+id/iv_cover"
-        app:layout_constraintTop_toBottomOf="@+id/tv_name"
-        tools:text="1/100"
-        tools:ignore="RtlHardcoded,SmallSp" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/iv_author"

@@ -47,33 +47,15 @@ class BooksAdapterGrid(context: Context, private val callBack: CallBack) :
 
     private fun upRefresh(binding: ItemBookshelfGridBinding, item: Book) {
         if (!item.isLocal && callBack.isUpdate(item.bookUrl)) {
-            binding.tvProgress.invisible()
+            binding.tvUpdate.invisible()
             binding.rlLoading.visible()
         } else {
             binding.rlLoading.inVisible()
-            if (AppConfig.showUnread) {
-                // 显示章节进度: 当前章节/总章节
-                val currentChapter = item.durChapterIndex + 1 // 索引从0开始，显示从1开始
-                val totalChapter = item.totalChapterNum
-                if (totalChapter > 0) {
-                    val progressText = "$currentChapter/$totalChapter"
-
-                    // 如果有更新：红色背景，白色字；否则：浅灰色字
-                    if (item.lastCheckCount > 0) {
-                        binding.tvProgress.text = " $progressText "
-                        binding.tvProgress.setTextColor(android.graphics.Color.WHITE)
-                        binding.tvProgress.setBackgroundColor(android.graphics.Color.RED)
-                    } else {
-                        binding.tvProgress.text = progressText
-                        binding.tvProgress.setTextColor(context.getCompatColor(R.color.tv_text_summary))
-                        binding.tvProgress.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                    }
-                    binding.tvProgress.visible()
-                } else {
-                    binding.tvProgress.invisible()
-                }
+            // 显示更新标识
+            if (item.lastCheckCount > 0) {
+                binding.tvUpdate.visible()
             } else {
-                binding.tvProgress.invisible()
+                binding.tvUpdate.invisible()
             }
         }
     }
