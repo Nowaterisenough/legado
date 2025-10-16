@@ -475,9 +475,25 @@ object BookHelp {
      * 格式化书名
      */
     fun formatBookName(name: String): String {
-        return name
+        val formatted = name
             .replace(AppPattern.nameRegex, "")
             .trim { it <= ' ' }
+
+        // 检测并去除重复的书名（比如 "秘密教学 秘密教学" 或 "秘密教学\n秘密教学"）
+        // 按空格、换行符等分割
+        val parts = formatted.split(Regex("\\s+"))
+
+        // 如果分割后有多个部分且所有部分都相同，则只保留一个
+        if (parts.size > 1 && parts.all { it == parts[0] }) {
+            return parts[0]
+        }
+
+        // 如果只有两个部分且相同，也只保留一个
+        if (parts.size == 2 && parts[0] == parts[1]) {
+            return parts[0]
+        }
+
+        return formatted
     }
 
     /**
