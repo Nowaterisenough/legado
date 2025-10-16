@@ -107,6 +107,15 @@
             app:allowDividerBelow="false"
             app:iconSpaceReserved="false" />
 
+        <io.legado.app.lib.prefs.SwitchPreference
+            android:key="autoBackupOnChange"
+            android:defaultValue="false"
+            android:title="@string/auto_backup_on_change_t"
+            android:summary="@string/auto_backup_on_change_s"
+            app:allowDividerAbove="false"
+            app:allowDividerBelow="false"
+            app:iconSpaceReserved="false" />
+
     </io.legado.app.lib.prefs.PreferenceCategory>
 
 </androidx.preference.PreferenceScreen>

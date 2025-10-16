@@ -694,5 +694,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefBoolean(PreferKey.enableMangaGray, value)
         }
 
+    val autoBackupOnChange get() = appCtx.getPrefBoolean(PreferKey.autoBackupOnChange, false)
+
 }
 
