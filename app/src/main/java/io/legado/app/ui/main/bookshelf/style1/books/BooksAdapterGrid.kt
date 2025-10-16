@@ -9,6 +9,7 @@ import io.legado.app.databinding.ItemBookshelfGridBinding
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
 import io.legado.app.utils.invisible
+import io.legado.app.utils.visible
 import splitties.views.onLongClick
 
 class BooksAdapterGrid(context: Context, private val callBack: CallBack) :
@@ -49,7 +50,15 @@ class BooksAdapterGrid(context: Context, private val callBack: CallBack) :
         } else {
             binding.rlLoading.inVisible()
             if (AppConfig.showUnread) {
-                binding.bvUnread.setBadgeCount(item.getUnreadChapterNum())
+                // 显示章节进度: 当前章节/总章节
+                val currentChapter = item.durChapterIndex + 1 // 索引从0开始，显示从1开始
+                val totalChapter = item.totalChapterNum
+                if (totalChapter > 0) {
+                    binding.bvUnread.text = "$currentChapter/$totalChapter"
+                    binding.bvUnread.visible()
+                } else {
+                    binding.bvUnread.invisible()
+                }
                 binding.bvUnread.setHighlight(item.lastCheckCount > 0)
             } else {
                 binding.bvUnread.invisible()

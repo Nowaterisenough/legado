@@ -103,8 +103,16 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
             } else {
                 binding.rlLoading.gone()
                 if (AppConfig.showUnread) {
+                    // 显示章节进度: 当前章节/总章节
+                    val currentChapter = item.durChapterIndex + 1 // 索引从0开始，显示从1开始
+                    val totalChapter = item.totalChapterNum
+                    if (totalChapter > 0) {
+                        binding.bvUnread.text = "$currentChapter/$totalChapter"
+                        binding.bvUnread.visible()
+                    } else {
+                        binding.bvUnread.invisible()
+                    }
                     binding.bvUnread.setHighlight(item.lastCheckCount > 0)
-                    binding.bvUnread.setBadgeCount(item.getUnreadChapterNum())
                 } else {
                     binding.bvUnread.invisible()
                 }
