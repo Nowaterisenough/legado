@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(bookshelf): 章节进度改为显示在书名下方\n\n- 移除封面角标，改为在书名下方显示章节进度\n- 有更新时显示红色背景白色文字\n- 无更新时显示浅灰色文字\n- 适配所有书架布局样式（style1和style2的网格和列表布局）\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(bookshelf): 下拉刷新时自动检查并恢复WebDAV备份\n\n- 下拉刷新时先检查WebDAV最新备份\n- 如果备份时间晚于本地书籍更新时间，先恢复备份\n- 恢复完成后再执行书籍更新\n- 未配置WebDAV或出错时仍正常执行更新\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nci(test): 优化APK文件命名规则\n\n- 原包名版本去掉\"_原包名\"后缀，改为 legado_app_(版本号).apk\n- 共存版本保持 legado_app_(版本号)_共存.apk 格式\n- 使文件名更简洁清晰\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat(bookshelf): 优化更新提示UI，移至封面角标\n\n- 移除书名下方的章节进度显示，简化布局\n- 将更新提示改为封面右上角的圆角矩形红底白字标识\n- 添加合适的padding保持视觉平衡\n- 移除AppConfig.showUnread相关逻辑，简化代码\n- 适配所有书架布局样式（style1和style2）\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix(resources): add missing ''update'' string resource\n\n- 添加缺失的 ''update'' 字符串资源，修复编译错误\n- 该资源被书架更新标识布局引用\n- 修复 GitHub Actions 构建失败问题\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

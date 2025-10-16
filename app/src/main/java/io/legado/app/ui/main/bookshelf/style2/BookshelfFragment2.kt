@@ -18,6 +18,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.FragmentBookshelf2Binding
+import io.legado.app.help.AppWebDav
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
@@ -32,6 +33,7 @@ import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.startActivity
 import io.legado.app.utils.startActivityForBook
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -83,7 +85,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         binding.refreshLayout.setColorSchemeColors(accentColor)
         binding.refreshLayout.setOnRefreshListener {
             binding.refreshLayout.isRefreshing = false
-            activityViewModel.upToc(books)
+            checkAndRestoreBackupThenUpdate()
         }
         if (bookshelfLayout == 0) {
             binding.rvBookshelf.layoutManager = LinearLayoutManager(context)
@@ -238,6 +240,53 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
             bookGroups.size + books.size
         } else {
             books.size
+        }
+    }
+
+    /**
+     * 检查并恢复WebDAV备份，然后更新书籍
+     */
+    private fun checkAndRestoreBackupThenUpdate() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                // 检查是否配置了WebDAV
+                if (!AppWebDav.isOk) {
+                    // 未配置WebDAV，直接更新书籍
+                    activityViewModel.upToc(books)
+                    return@launch
+                }
+
+                // 获取最新的备份文件
+                val lastBackupResult = AppWebDav.lastBackUp()
+                val lastBackupFile = lastBackupResult.getOrNull()
+
+                if (lastBackupFile == null) {
+                    // 没有备份文件，直接更新书籍
+                    activityViewModel.upToc(books)
+                    return@launch
+                }
+
+                // 获取本地书籍的最后更新时间
+                val localLastUpdateTime = books.maxOfOrNull { it.latestChapterTime } ?: 0L
+
+                // 比较备份时间和本地更新时间
+                if (lastBackupFile.lastModify > localLastUpdateTime) {
+                    // 备份更新，先恢复备份
+                    context?.toastOnUi("发现新备份，正在恢复...")
+                    AppWebDav.restoreWebDav(lastBackupFile.displayName)
+                    context?.toastOnUi("备份恢复完成，开始更新书籍")
+                    // 等待一小段时间确保数据库更新完成
+                    delay(500)
+                }
+
+                // 更新书籍
+                activityViewModel.upToc(books)
+
+            } catch (e: Exception) {
+                AppLog.put("检查WebDAV备份失败\n${e.localizedMessage}", e)
+                // 出错时仍然执行更新
+                activityViewModel.upToc(books)
+            }
         }
     }
 

@@ -85,12 +85,28 @@
             android:ellipsize="end"
             android:gravity="top|center_horizontal"
             android:includeFontPadding="false"
-            android:lines="2"
+            android:maxLines="2"
             android:scrollbars="none"
             android:text="@string/book_name"
             android:textColor="@color/primaryText"
             android:textSize="12sp"
             tools:ignore="RtlHardcoded,RtlSymmetry" />
+
+        <TextView
+            android:id="@+id/tv_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:scrollbars="none"
+            android:textColor="@color/secondaryText"
+            android:textSize="10sp"
+            android:visibility="gone"
+            tools:ignore="RtlHardcoded,SmallSp" />
 
     </LinearLayout>
 

@@ -150,6 +150,7 @@
     <string name="audio_pause">播放暂停</string>
     <string name="text_return">返回</string>
     <string name="refresh">刷新</string>
+    <string name="update">更新</string>
     <string name="start">开始</string>
     <string name="stop">停止</string>
     <string name="pause">暂停</string>

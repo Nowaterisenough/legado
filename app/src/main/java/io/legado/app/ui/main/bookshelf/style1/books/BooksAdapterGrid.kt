@@ -45,12 +45,37 @@ class BooksAdapterGrid(context: Context, private val callBack: CallBack) :
         }
     }
 
+    private fun getChapterString(item: Book): String {
+        val durChapterIndex = item.durChapterIndex
+        val totalChapterNum = item.totalChapterNum
+        return when {
+            totalChapterNum == 0 -> ""
+            else -> "${durChapterIndex + 1}/$totalChapterNum"
+        }
+    }
+
     private fun upRefresh(binding: ItemBookshelfGridBinding, item: Book) {
         if (!item.isLocal && callBack.isUpdate(item.bookUrl)) {
             binding.tvUpdate.invisible()
+            binding.tvProgress.invisible()
             binding.rlLoading.visible()
         } else {
             binding.rlLoading.inVisible()
+            // 显示章节进度
+            val chapterString = getChapterString(item)
+            if (chapterString.isNotEmpty()) {
+                binding.tvProgress.text = chapterString
+                if (item.lastCheckCount > 0) {
+                    binding.tvProgress.setTextColor(context.getCompatColor(R.color.md_white_1000))
+                    binding.tvProgress.setBackgroundResource(R.drawable.bg_progress_badge)
+                } else {
+                    binding.tvProgress.setTextColor(context.getCompatColor(R.color.secondaryText))
+                    binding.tvProgress.background = null
+                }
+                binding.tvProgress.visible()
+            } else {
+                binding.tvProgress.invisible()
+            }
             // 显示更新标识
             if (item.lastCheckCount > 0) {
                 binding.tvUpdate.visible()
