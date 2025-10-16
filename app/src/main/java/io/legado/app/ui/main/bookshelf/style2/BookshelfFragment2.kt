@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.EventBus
+import io.legado.app.constant.PreferKey
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
@@ -28,7 +29,9 @@ import io.legado.app.ui.book.search.SearchActivity
 import io.legado.app.ui.main.bookshelf.BaseBookshelfFragment
 import io.legado.app.utils.cnCompare
 import io.legado.app.utils.flowWithLifecycleAndDatabaseChangeFirst
+import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.observeEvent
+import io.legado.app.utils.putPrefLong
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.startActivity
@@ -266,17 +269,19 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     return@launch
                 }
 
-                // 获取本地书籍的最后更新时间
-                val localLastUpdateTime = books.maxOfOrNull { it.latestChapterTime } ?: 0L
+                // 获取上次自动恢复的时间
+                val lastRestoreTime = context?.getPrefLong(PreferKey.lastWebDavRestoreTime) ?: 0L
 
-                // 比较备份时间和本地更新时间
-                if (lastBackupFile.lastModify > localLastUpdateTime) {
+                // 比较备份时间和上次恢复时间
+                if (lastBackupFile.lastModify > lastRestoreTime) {
                     // 备份更新，先恢复备份
                     context?.toastOnUi("发现新备份，正在恢复...")
                     AppWebDav.restoreWebDav(lastBackupFile.displayName)
+                    // 保存恢复时间
+                    context?.putPrefLong(PreferKey.lastWebDavRestoreTime, System.currentTimeMillis())
                     context?.toastOnUi("备份恢复完成，开始更新书籍")
                     // 等待一小段时间确保数据库更新完成
-                    delay(500)
+                    delay(1000)
                 }
 
                 // 更新书籍
