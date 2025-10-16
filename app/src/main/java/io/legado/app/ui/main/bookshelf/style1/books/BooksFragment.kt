@@ -23,6 +23,7 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.FragmentBooksBinding
 import io.legado.app.help.AppWebDav
+import io.legado.app.help.storage.Backup
 import io.legado.app.constant.PreferKey
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.accentColor
@@ -235,7 +236,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
     }
 
     /**
-     * 检查并恢复WebDAV备份，然后更新书籍
+     * 检查并同步WebDAV备份，然后更新书籍
+     * 记录当前时间戳，对比本地和远端时间戳：
+     * - 如果本地更新，先更新书籍信息再备份到远端
+     * - 如果远端更新，先恢复远端备份再更新书籍信息
      */
     private fun checkAndRestoreBackupThenUpdate() {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -247,36 +251,56 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                     return@launch
                 }
 
-                // 获取最新的备份文件
+                // 记录当前时间戳（北京时间）
+                val currentTime = System.currentTimeMillis()
+
+                // 获取最新的远端备份文件
                 val lastBackupResult = AppWebDav.lastBackUp()
                 val lastBackupFile = lastBackupResult.getOrNull()
 
-                if (lastBackupFile == null) {
-                    // 没有备份文件，直接更新书籍
-                    activityViewModel.upToc(booksAdapter.getItems())
-                    return@launch
+                // 获取上次同步时间
+                val lastSyncTime = context?.getPrefLong(PreferKey.lastWebDavRestoreTime) ?: 0L
+
+                when {
+                    lastBackupFile == null -> {
+                        // 没有远端备份，先更新书籍再备份
+                        context?.toastOnUi("未发现远端备份，更新后将备份到WebDAV")
+                        activityViewModel.upToc(booksAdapter.getItems())
+                        // 等待更新完成
+                        delay(2000)
+                        // 备份到远端
+                        context?.let { ctx ->
+                            Backup.backupLocked(ctx, AppConfig.backupPath)
+                            putPrefLong(PreferKey.lastWebDavRestoreTime, currentTime)
+                            toastOnUi("备份到WebDAV完成")
+                        }
+                    }
+                    lastBackupFile.lastModify > lastSyncTime -> {
+                        // 远端备份更新，先恢复备份再更新书籍
+                        context?.toastOnUi("发现新的远端备份，正在恢复...")
+                        AppWebDav.restoreWebDav(lastBackupFile.displayName)
+                        context?.putPrefLong(PreferKey.lastWebDavRestoreTime, currentTime)
+                        context?.toastOnUi("备份恢复完成，开始更新书籍")
+                        // 等待一小段时间确保数据库更新完成
+                        delay(1000)
+                        activityViewModel.upToc(booksAdapter.getItems())
+                    }
+                    else -> {
+                        // 本地更新或时间相同，先更新书籍再备份
+                        activityViewModel.upToc(booksAdapter.getItems())
+                        // 等待更新完成
+                        delay(2000)
+                        // 备份到远端
+                        context?.let { ctx ->
+                            Backup.backupLocked(ctx, AppConfig.backupPath)
+                            putPrefLong(PreferKey.lastWebDavRestoreTime, currentTime)
+                        }
+                    }
                 }
-
-                // 获取上次自动恢复的时间
-                val lastRestoreTime = context?.getPrefLong(PreferKey.lastWebDavRestoreTime) ?: 0L
-
-                // 比较备份时间和上次恢复时间
-                if (lastBackupFile.lastModify > lastRestoreTime) {
-                    // 备份更新，先恢复备份
-                    context?.toastOnUi("发现新备份，正在恢复...")
-                    AppWebDav.restoreWebDav(lastBackupFile.displayName)
-                    // 保存恢复时间
-                    context?.putPrefLong(PreferKey.lastWebDavRestoreTime, System.currentTimeMillis())
-                    context?.toastOnUi("备份恢复完成，开始更新书籍")
-                    // 等待一小段时间确保数据库更新完成
-                    delay(1000)
-                }
-
-                // 更新书籍
-                activityViewModel.upToc(booksAdapter.getItems())
 
             } catch (e: Exception) {
-                AppLog.put("检查WebDAV备份失败\n${e.localizedMessage}", e)
+                AppLog.put("WebDAV同步失败\n${e.localizedMessage}", e)
+                context?.toastOnUi("WebDAV同步失败: ${e.localizedMessage}")
                 // 出错时仍然执行更新
                 activityViewModel.upToc(booksAdapter.getItems())
             }

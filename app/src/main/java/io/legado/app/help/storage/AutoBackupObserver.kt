@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 自动备份观察器
- * 监听书源、书架和阅读记录的变化,当配置开启时自动触发WebDAV备份
+ * 监听书源和书架数据的变化,当配置开启时自动触发WebDAV备份
  */
 object AutoBackupObserver {
 
@@ -23,7 +23,7 @@ object AutoBackupObserver {
     private const val BACKUP_DELAY = 30 * 1000L // 30秒延迟,避免频繁备份
     private const val MIN_BACKUP_INTERVAL = 5 * 60 * 1000L // 最小备份间隔5分钟
 
-    private val observer = object : InvalidationTracker.Observer("books", "book_sources", "readRecord") {
+    private val observer = object : InvalidationTracker.Observer("books", "book_sources") {
         override fun onInvalidated(tables: Set<String>) {
             notifyDataChanged()
         }
