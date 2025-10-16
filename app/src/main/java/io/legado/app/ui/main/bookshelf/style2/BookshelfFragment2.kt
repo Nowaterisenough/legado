@@ -258,7 +258,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
             try {
                 // 检查是否配置了WebDAV
                 if (!AppWebDav.isOk) {
-                    // 未配置WebDAV，直接更新书籍
+                    AppLog.put("WebDAV未配置，直接更新书籍")
                     activityViewModel.upToc(books)
                     return@launch
                 }
@@ -267,31 +267,49 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                 val currentTime = System.currentTimeMillis()
 
                 // 获取最新的远端备份文件
+                AppLog.put("开始检查远端备份...")
                 val lastBackupResult = AppWebDav.lastBackUp()
+
+                // 详细日志
+                if (lastBackupResult.isFailure) {
+                    val exception = lastBackupResult.exceptionOrNull()
+                    AppLog.put("获取远端备份失败: ${exception?.message}", exception)
+                    context?.toastOnUi("检查WebDAV备份失败: ${exception?.message}")
+                    activityViewModel.upToc(books)
+                    return@launch
+                }
+
                 val lastBackupFile = lastBackupResult.getOrNull()
+                AppLog.put("远端备份文件: ${lastBackupFile?.displayName ?: "null"}, 修改时间: ${lastBackupFile?.lastModify ?: 0}")
 
                 // 获取上次同步时间
                 val lastSyncTime = context?.getPrefLong(PreferKey.lastWebDavRestoreTime) ?: 0L
+                AppLog.put("上次同步时间: $lastSyncTime, 当前时间: $currentTime")
 
                 when {
                     lastBackupFile == null -> {
                         // 没有远端备份，先更新书籍再备份
+                        AppLog.put("未发现远端备份，更新后将备份到WebDAV")
                         context?.toastOnUi("未发现远端备份，更新后将备份到WebDAV")
                         activityViewModel.upToc(books)
                         // 等待更新完成
                         delay(2000)
                         // 备份到远端
                         context?.let { ctx ->
+                            AppLog.put("开始备份到WebDAV...")
                             Backup.backupLocked(ctx, AppConfig.backupPath)
                             putPrefLong(PreferKey.lastWebDavRestoreTime, currentTime)
+                            AppLog.put("备份到WebDAV完成")
                             toastOnUi("备份到WebDAV完成")
                         }
                     }
                     lastBackupFile.lastModify > lastSyncTime -> {
                         // 远端备份更新，先恢复备份再更新书籍
+                        AppLog.put("发现新的远端备份: ${lastBackupFile.displayName}, 远端时间${lastBackupFile.lastModify} > 本地时间${lastSyncTime}, 开始恢复...")
                         context?.toastOnUi("发现新的远端备份，正在恢复...")
                         AppWebDav.restoreWebDav(lastBackupFile.displayName)
                         context?.putPrefLong(PreferKey.lastWebDavRestoreTime, currentTime)
+                        AppLog.put("备份恢复完成")
                         context?.toastOnUi("备份恢复完成，开始更新书籍")
                         // 等待一小段时间确保数据库更新完成
                         delay(1000)
@@ -299,13 +317,16 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     }
                     else -> {
                         // 本地更新或时间相同，先更新书籍再备份
+                        AppLog.put("本地时间戳${lastSyncTime}>=远端时间${lastBackupFile.lastModify}，先更新书籍再备份")
                         activityViewModel.upToc(books)
                         // 等待更新完成
                         delay(2000)
                         // 备份到远端
                         context?.let { ctx ->
+                            AppLog.put("开始备份到WebDAV...")
                             Backup.backupLocked(ctx, AppConfig.backupPath)
                             putPrefLong(PreferKey.lastWebDavRestoreTime, currentTime)
+                            AppLog.put("备份到WebDAV完成")
                         }
                     }
                 }
