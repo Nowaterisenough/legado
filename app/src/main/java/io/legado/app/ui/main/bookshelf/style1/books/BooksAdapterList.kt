@@ -5,11 +5,13 @@ import android.os.Bundle
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.data.entities.Book
 import io.legado.app.databinding.ItemBookshelfListBinding
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
+import io.legado.app.utils.getCompatColor
 import io.legado.app.utils.invisible
 import io.legado.app.utils.toTimeAgo
 import io.legado.app.utils.visible
@@ -69,7 +71,7 @@ class BooksAdapterList(
 
     private fun upRefresh(binding: ItemBookshelfListBinding, item: Book) {
         if (!item.isLocal && callBack.isUpdate(item.bookUrl)) {
-            binding.bvUnread.invisible()
+            binding.tvProgress.invisible()
             binding.rlLoading.visible()
         } else {
             binding.rlLoading.gone()
@@ -78,14 +80,24 @@ class BooksAdapterList(
                 val currentChapter = item.durChapterIndex + 1 // 索引从0开始，显示从1开始
                 val totalChapter = item.totalChapterNum
                 if (totalChapter > 0) {
-                    binding.bvUnread.text = "$currentChapter/$totalChapter"
-                    binding.bvUnread.visible()
+                    val progressText = "$currentChapter/$totalChapter"
+
+                    // 如果有更新：红色背景，白色字；否则：浅灰色字
+                    if (item.lastCheckCount > 0) {
+                        binding.tvProgress.text = " $progressText "
+                        binding.tvProgress.setTextColor(android.graphics.Color.WHITE)
+                        binding.tvProgress.setBackgroundColor(android.graphics.Color.RED)
+                    } else {
+                        binding.tvProgress.text = progressText
+                        binding.tvProgress.setTextColor(context.getCompatColor(R.color.tv_text_summary))
+                        binding.tvProgress.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    }
+                    binding.tvProgress.visible()
                 } else {
-                    binding.bvUnread.invisible()
+                    binding.tvProgress.invisible()
                 }
-                binding.bvUnread.setHighlight(item.lastCheckCount > 0)
             } else {
-                binding.bvUnread.invisible()
+                binding.tvProgress.invisible()
             }
         }
     }
