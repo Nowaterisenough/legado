@@ -151,6 +151,7 @@
     <string name="audio_pause">Pause</string>
     <string name="text_return">Back</string>
     <string name="refresh">Refresh</string>
+    <string name="update">Update</string>
     <string name="start">Start</string>
     <string name="stop">Stop</string>
     <string name="pause">Pause</string>
