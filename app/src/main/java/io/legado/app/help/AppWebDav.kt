@@ -218,8 +218,32 @@ object AppWebDav {
     suspend fun backUpWebDav(fileName: String) {
         if (!NetworkUtils.isAvailable()) return
         authorization?.let {
+            // 上传新备份
             val putUrl = "$rootWebDavUrl$fileName"
             WebDav(putUrl, it).upload(Backup.zipFilePath)
+            AppLog.put("备份上传至WebDAV成功: $fileName")
+
+            // 删除旧备份,只保留最新的
+            try {
+                val files = WebDav(rootWebDavUrl, it).listFiles()
+                val backupFiles = files.filter { file ->
+                    file.displayName.startsWith("backup") && file.displayName != fileName
+                }
+
+                if (backupFiles.isNotEmpty()) {
+                    AppLog.put("发现${backupFiles.size}个旧备份文件,开始清理...")
+                    backupFiles.forEach { oldFile ->
+                        try {
+                            WebDav(rootWebDavUrl + oldFile.displayName, it).delete()
+                            AppLog.put("删除旧备份: ${oldFile.displayName}")
+                        } catch (e: Exception) {
+                            AppLog.put("删除旧备份失败: ${oldFile.displayName}\n${e.localizedMessage}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                AppLog.put("清理旧备份失败\n${e.localizedMessage}", e)
+            }
         }
     }
 

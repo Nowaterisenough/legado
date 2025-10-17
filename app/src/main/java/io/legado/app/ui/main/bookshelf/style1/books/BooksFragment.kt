@@ -282,13 +282,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                         context?.toastOnUi("未发现远端备份，更新后将备份到WebDAV")
                         activityViewModel.upToc(booksAdapter.getItems())
                         delay(2000)
-                        // 备份到远端并更新本地数据变化时间
+                        // 备份到远端(backup方法会自动更新本地时间戳)
                         context?.let { ctx ->
-                            val currentTime = System.currentTimeMillis()
                             AppLog.put("开始备份到WebDAV...")
                             Backup.backupLocked(ctx, AppConfig.backupPath)
-                            ctx.putPrefLong(PreferKey.lastDataChangeTime, currentTime)
-                            AppLog.put("备份到WebDAV完成，更新本地时间戳: $currentTime")
                             toastOnUi("备份到WebDAV完成")
                         }
                     }
@@ -316,13 +313,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                             AppLog.put("本地数据较新或相同 ($localDataChangeTime >= $remoteTime)，先更新再备份")
                             activityViewModel.upToc(booksAdapter.getItems())
                             delay(2000)
-                            // 备份到远端
+                            // 备份到远端(backup方法会自动更新本地时间戳)
                             context?.let { ctx ->
-                                val currentTime = System.currentTimeMillis()
                                 AppLog.put("开始备份到WebDAV...")
                                 Backup.backupLocked(ctx, AppConfig.backupPath)
-                                ctx.putPrefLong(PreferKey.lastDataChangeTime, currentTime)
-                                AppLog.put("备份到WebDAV完成，更新本地时间戳: $currentTime")
                             }
                         }
                     }

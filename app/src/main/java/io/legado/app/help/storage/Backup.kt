@@ -69,15 +69,14 @@ object Backup {
         )
     }
 
-    private fun getNowZipFileName(): String {
-        val currentTime = System.currentTimeMillis()
+    private fun getNowZipFileName(timestamp: Long = System.currentTimeMillis()): String {
         val backupDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            .format(Date(currentTime))
+            .format(Date(timestamp))
         val deviceName = AppConfig.webDavDeviceName
         return if (deviceName?.isNotBlank() == true) {
-            "backup${backupDate}-${deviceName}-${currentTime}.zip"
+            "backup${backupDate}-${deviceName}-${timestamp}.zip"
         } else {
-            "backup${backupDate}-${currentTime}.zip"
+            "backup${backupDate}-${timestamp}.zip"
         }
     }
 
@@ -123,7 +122,7 @@ object Backup {
                         } else {
                             val currentTime = System.currentTimeMillis()
                             LocalConfig.lastBackup = currentTime
-                            LocalConfig.lastDataChange = currentTime
+                            context.putPrefLong(PreferKey.lastDataChangeTime, currentTime)
                         }
                     }
                 }
@@ -143,9 +142,15 @@ object Backup {
 
     private suspend fun backup(context: Context, path: String?) {
         LogUtils.d(TAG, "开始备份 path:$path")
+        // 在备份开始时获取时间戳,确保文件名和记录的时间戳一致
         val currentTime = System.currentTimeMillis()
+        val zipFileName = getNowZipFileName(currentTime)
+
+        // 更新时间戳记录
         LocalConfig.lastBackup = currentTime
-        LocalConfig.lastDataChange = currentTime
+        context.putPrefLong(PreferKey.lastDataChangeTime, currentTime)
+        AppLog.put("备份开始，时间戳: $currentTime, 文件名: $zipFileName")
+
         val aes = BackupAES()
         FileUtils.delete(backupPath)
         writeListToJson(appDb.bookDao.all, "bookshelf.json", backupPath)
@@ -212,7 +217,6 @@ object Backup {
             edit.commit()
         }
         coroutineContext.ensureActive()
-        val zipFileName = getNowZipFileName()
         val paths = arrayListOf(*backupFileNames)
         for (i in 0 until paths.size) {
             paths[i] = backupPath + File.separator + paths[i]
@@ -240,6 +244,7 @@ object Backup {
             }
             try {
                 AppWebDav.backUpWebDav(zipFileName)
+                AppLog.put("备份上传成功: $zipFileName")
             } catch (e: Exception) {
                 AppLog.put("上传备份至webdav失败\n$e", e)
             }
