@@ -310,13 +310,15 @@ open class WebDav(
      */
     @Throws(WebDavException::class)
     suspend fun downloadTo(savedPath: String, replaceExisting: Boolean) {
-        val file = File(savedPath)
-        if (file.exists() && !replaceExisting) {
-            return
-        }
-        downloadInputStream().use { byteStream ->
-            FileOutputStream(file).use {
-                byteStream.copyTo(it)
+        withContext(IO) {
+            val file = File(savedPath)
+            if (file.exists() && !replaceExisting) {
+                return@withContext
+            }
+            downloadInputStream().use { byteStream ->
+                FileOutputStream(file).use {
+                    byteStream.copyTo(it)
+                }
             }
         }
     }
