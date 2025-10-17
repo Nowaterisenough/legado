@@ -348,6 +348,11 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     }
                 }
 
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // 协程被取消（通常是因为恢复备份后数据库变化触发了新的同步）
+                // 这是正常情况，不需要处理，Flow会自动更新界面
+                AppLog.put("WebDAV同步协程被取消（正常）")
+                throw e  // 重新抛出以正确传播取消信号
             } catch (e: Exception) {
                 AppLog.put("WebDAV同步失败: ${e.localizedMessage}", e)
                 context?.toastOnUi("WebDAV同步失败: ${e.localizedMessage}")
