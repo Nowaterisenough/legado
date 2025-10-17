@@ -151,6 +151,8 @@ object AppWebDav {
                 }
                 lastBackupFile
             }
+        }.onFailure {
+            coroutineContext.ensureActive()
         }
     }
 
