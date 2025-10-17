@@ -32,8 +32,7 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.net.MalformedURLException
 import java.net.URL
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.coroutineContext
@@ -212,10 +211,12 @@ open class WebDav(
                 }.getOrDefault(0)
                 val lastModify: Long = kotlin.runCatching {
                     element.findNS("getlastmodified", ns)
-                        .firstOrNull()?.text()?.let {
-                            LocalDateTime.parse(it, dateTimeFormatter)
-                                .toInstant(ZoneOffset.of("+8")).toEpochMilli()
+                        .firstOrNull()?.text()?.let { timeStr ->
+                            ZonedDateTime.parse(timeStr, dateTimeFormatter)
+                                .toInstant().toEpochMilli()
                         }
+                }.onFailure { e ->
+                    AppLog.put("WebDAV时间戳解析失败: ${e.message}", e)
                 }.getOrNull() ?: 0
                 var fullURL = NetworkUtils.getAbsoluteURL(baseUrl, hrefDecode)
                 if (WebDavFile.isDir(contentType, resourceType) && !fullURL.endsWith("/")) {

@@ -18,3 +18,4 @@ package-lock.json
 .kotlin/
 # Claude Code local settings
 .claude/settings.local.json
+CLAUDE.md

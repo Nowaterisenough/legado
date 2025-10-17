@@ -261,14 +261,15 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                 // 详细日志
                 if (lastBackupResult.isFailure) {
                     val exception = lastBackupResult.exceptionOrNull()
-                    AppLog.put("获取远端备份失败: ${exception?.message}", exception)
-                    context?.toastOnUi("检查WebDAV备份失败: ${exception?.message}")
+                    val errorMsg = exception?.message ?: "未知错误"
+                    AppLog.put("获取远端备份失败: $errorMsg", exception)
+                    context?.toastOnUi("检查WebDAV备份失败: $errorMsg")
                     activityViewModel.upToc(booksAdapter.getItems())
                     return@launch
                 }
 
                 val lastBackupFile = lastBackupResult.getOrNull()
-                AppLog.put("远端备份文件: ${lastBackupFile?.displayName ?: "null"}, 修改时间: ${lastBackupFile?.lastModify ?: 0}")
+                AppLog.put("远端备份文件: ${lastBackupFile?.displayName ?: "无"}, 修改时间: ${lastBackupFile?.lastModify ?: 0}")
 
                 // 获取上次同步时间
                 val lastSyncTime = context?.getPrefLong(PreferKey.lastWebDavRestoreTime) ?: 0L
@@ -290,6 +291,17 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                             AppLog.put("备份到WebDAV完成")
                             toastOnUi("备份到WebDAV完成")
                         }
+                    }
+                    lastBackupFile.lastModify == 0L -> {
+                        // 时间戳解析失败，无法判断新旧，保守起见先恢复再更新
+                        AppLog.put("警告：远端备份时间戳解析失败，将恢复远端备份")
+                        context?.toastOnUi("远端备份时间戳异常，正在恢复...")
+                        AppWebDav.restoreWebDav(lastBackupFile.displayName)
+                        context?.putPrefLong(PreferKey.lastWebDavRestoreTime, currentTime)
+                        AppLog.put("备份恢复完成")
+                        context?.toastOnUi("备份恢复完成，开始更新书籍")
+                        delay(1000)
+                        activityViewModel.upToc(booksAdapter.getItems())
                     }
                     lastBackupFile.lastModify > lastSyncTime -> {
                         // 远端备份更新，先恢复备份再更新书籍
