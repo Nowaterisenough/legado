@@ -250,7 +250,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
 
     /**
      * 智能双向同步WebDAV备份
-     * 策略：比较远端备份的lastModify和本地的LocalConfig.lastBackup
+     * 策略：比较远端备份的lastModify和本地的LocalConfig.lastDataChange
      * - 远端更新：先恢复备份再更新书籍
      * - 本地更新：先更新书籍再备份
      */
@@ -283,11 +283,11 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
 
                 val remoteBackupFile = lastBackupResult.getOrNull()
                 val remoteLastModify = remoteBackupFile?.lastModify ?: 0L
-                val localLastBackup = LocalConfig.lastBackup
+                val localLastDataChange = LocalConfig.lastDataChange
 
                 AppLog.put(
                     "远端备份: ${remoteBackupFile?.displayName ?: "无"} (时间戳: $remoteLastModify), " +
-                            "本地最后备份: $localLastBackup"
+                            "本地最后数据变化: $localLastDataChange"
                 )
 
                 when {
@@ -299,6 +299,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                         delay(2000)
                         context?.let { ctx ->
                             Backup.backupLocked(ctx, AppConfig.backupPath)
+                            LocalConfig.lastDataChange = LocalConfig.lastBackup
                             AppLog.put("首次备份完成，时间戳: ${LocalConfig.lastBackup}")
                             toastOnUi("备份到WebDAV完成")
                         }
@@ -309,21 +310,23 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                         AppLog.put("警告：远端时间戳解析失败，将恢复远端备份")
                         context?.toastOnUi("远端时间戳异常，正在恢复...")
                         AppWebDav.restoreWebDav(remoteBackupFile.displayName)
-                        AppLog.put("恢复完成")
+                        LocalConfig.lastDataChange = System.currentTimeMillis()
+                        AppLog.put("恢复完成，更新lastDataChange: ${LocalConfig.lastDataChange}")
                         context?.toastOnUi("恢复完成，开始更新书籍")
                         delay(1000)
                         activityViewModel.upToc(books)
                     }
 
-                    remoteLastModify > localLastBackup -> {
+                    remoteLastModify > localLastDataChange -> {
                         // 远端更新，先恢复再更新
                         AppLog.put(
-                            "远端备份更新 (远端:$remoteLastModify > 本地:$localLastBackup)，" +
+                            "远端备份更新 (远端:$remoteLastModify > 本地:$localLastDataChange)，" +
                                     "先恢复备份"
                         )
                         context?.toastOnUi("发现新的远端备份，正在恢复...")
                         AppWebDav.restoreWebDav(remoteBackupFile.displayName)
-                        AppLog.put("恢复完成，开始更新书籍")
+                        LocalConfig.lastDataChange = remoteLastModify
+                        AppLog.put("恢复完成，更新lastDataChange: ${LocalConfig.lastDataChange}")
                         context?.toastOnUi("恢复完成，开始更新书籍")
                         delay(1000)
                         activityViewModel.upToc(books)
@@ -332,13 +335,14 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     else -> {
                         // 本地更新或相等，先更新再备份
                         AppLog.put(
-                            "本地备份更新 (本地:$localLastBackup >= 远端:$remoteLastModify)，" +
+                            "本地数据更新 (本地:$localLastDataChange >= 远端:$remoteLastModify)，" +
                                     "先更新再备份"
                         )
                         activityViewModel.upToc(books)
                         delay(2000)
                         context?.let { ctx ->
                             Backup.backupLocked(ctx, AppConfig.backupPath)
+                            LocalConfig.lastDataChange = LocalConfig.lastBackup
                             AppLog.put("备份完成，时间戳: ${LocalConfig.lastBackup}")
                         }
                     }

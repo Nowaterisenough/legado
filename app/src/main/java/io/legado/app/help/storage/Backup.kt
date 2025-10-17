@@ -94,7 +94,9 @@ object Backup {
                         if (!AppWebDav.hasBackUp(backupZipFileName)) {
                             backup(context, AppConfig.backupPath)
                         } else {
-                            LocalConfig.lastBackup = System.currentTimeMillis()
+                            val currentTime = System.currentTimeMillis()
+                            LocalConfig.lastBackup = currentTime
+                            LocalConfig.lastDataChange = currentTime
                         }
                     }
                 }
@@ -114,7 +116,9 @@ object Backup {
 
     private suspend fun backup(context: Context, path: String?) {
         LogUtils.d(TAG, "开始备份 path:$path")
-        LocalConfig.lastBackup = System.currentTimeMillis()
+        val currentTime = System.currentTimeMillis()
+        LocalConfig.lastBackup = currentTime
+        LocalConfig.lastDataChange = currentTime
         val aes = BackupAES()
         FileUtils.delete(backupPath)
         writeListToJson(appDb.bookDao.all, "bookshelf.json", backupPath)

@@ -35,6 +35,24 @@ by appCtx.getSharedPreferences("local", Context.MODE_PRIVATE) {
             putLong("lastBackup", value)
         }
 
+    /**
+     * 最后一次数据变化时间（书籍/书源/其他配置变化）
+     * 用于WebDAV智能同步判断本地是否有新变化
+     */
+    var lastDataChange: Long
+        get() = getLong("lastDataChange", 0)
+        set(value) {
+            putLong("lastDataChange", value)
+        }
+
+    /**
+     * 标记数据已变化，用于WebDAV同步
+     * 在添加/删除/修改书籍、书源等数据时调用
+     */
+    fun markDataChanged() {
+        lastDataChange = System.currentTimeMillis()
+    }
+
     var privacyPolicyOk: Boolean
         get() = getBoolean("privacyPolicyOk")
         set(value) {
