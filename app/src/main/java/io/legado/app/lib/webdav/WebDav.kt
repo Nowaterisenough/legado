@@ -159,16 +159,18 @@ open class WebDav(
             String.format(DIR, requestProps.toString() + "\n")
         }
         val url = httpUrl ?: return null
-        return webDavClient.newCallResponse {
-            url(url)
-            addHeader("Depth", depth.toString())
-            // 添加RequestBody对象，可以只返回的属性。如果设为null，则会返回全部属性
-            // 注意：尽量手动指定需要返回的属性。若返回全部属性，可能后由于Prop.java里没有该属性名，而崩溃。
-            val requestBody = requestPropsStr.toRequestBody("text/plain".toMediaType())
-            method("PROPFIND", requestBody)
-        }.apply {
-            checkResult(this)
-        }.body?.text()
+        return withContext(IO) {
+            webDavClient.newCallResponse {
+                url(url)
+                addHeader("Depth", depth.toString())
+                // 添加RequestBody对象，可以只返回的属性。如果设为null，则会返回全部属性
+                // 注意：尽量手动指定需要返回的属性。若返回全部属性，可能后由于Prop.java里没有该属性名，而崩溃。
+                val requestBody = requestPropsStr.toRequestBody("text/plain".toMediaType())
+                method("PROPFIND", requestBody)
+            }.apply {
+                checkResult(this)
+            }.body?.text()
+        }
     }
 
     /**
@@ -246,12 +248,14 @@ open class WebDav(
     suspend fun exists(): Boolean {
         val url = httpUrl ?: return false
         return kotlin.runCatching {
-            return webDavClient.newCallResponse {
-                url(url)
-                addHeader("Depth", "0")
-                val requestBody = EXISTS.toRequestBody("application/xml".toMediaType())
-                method("PROPFIND", requestBody)
-            }.use { it.isSuccessful }
+            withContext(IO) {
+                webDavClient.newCallResponse {
+                    url(url)
+                    addHeader("Depth", "0")
+                    val requestBody = EXISTS.toRequestBody("application/xml".toMediaType())
+                    method("PROPFIND", requestBody)
+                }.use { it.isSuccessful }
+            }
         }.onFailure {
             coroutineContext.ensureActive()
         }.getOrDefault(false)
@@ -262,12 +266,14 @@ open class WebDav(
      */
     suspend fun check(): Boolean {
         return kotlin.runCatching {
-            webDavClient.newCallResponse {
-                url(url)
-                addHeader("Depth", "0")
-                val requestBody = EXISTS.toRequestBody("application/xml".toMediaType())
-                method("PROPFIND", requestBody)
-            }.use { it.code != 401 }
+            withContext(IO) {
+                webDavClient.newCallResponse {
+                    url(url)
+                    addHeader("Depth", "0")
+                    val requestBody = EXISTS.toRequestBody("application/xml".toMediaType())
+                    method("PROPFIND", requestBody)
+                }.use { it.code != 401 }
+            }
         }.onFailure {
             coroutineContext.ensureActive()
         }.getOrDefault(true)
@@ -282,11 +288,13 @@ open class WebDav(
         //防止报错
         return kotlin.runCatching {
             if (!exists()) {
-                webDavClient.newCallResponse {
-                    url(url)
-                    method("MKCOL", null)
-                }.use {
-                    checkResult(it)
+                withContext(IO) {
+                    webDavClient.newCallResponse {
+                        url(url)
+                        method("MKCOL", null)
+                    }.use {
+                        checkResult(it)
+                    }
                 }
             }
         }.onFailure {
@@ -398,12 +406,14 @@ open class WebDav(
     @Throws(WebDavException::class)
     suspend fun downloadInputStream(): InputStream {
         val url = httpUrl ?: throw WebDavException("WebDav下载出错\nurl为空")
-        val byteStream = webDavClient.newCallResponse {
-            url(url)
-        }.apply {
-            checkResult(this)
-        }.body?.byteStream()
-        return byteStream ?: throw WebDavException("WebDav下载出错\nNull Exception")
+        return withContext(IO) {
+            val byteStream = webDavClient.newCallResponse {
+                url(url)
+            }.apply {
+                checkResult(this)
+            }.body?.byteStream()
+            byteStream ?: throw WebDavException("WebDav下载出错\nNull Exception")
+        }
     }
 
     /**
@@ -413,11 +423,13 @@ open class WebDav(
         val url = httpUrl ?: return false
         //防止报错
         return kotlin.runCatching {
-            webDavClient.newCallResponse {
-                url(url)
-                method("DELETE", null)
-            }.use {
-                checkResult(it)
+            withContext(IO) {
+                webDavClient.newCallResponse {
+                    url(url)
+                    method("DELETE", null)
+                }.use {
+                    checkResult(it)
+                }
             }
         }.onFailure {
             coroutineContext.ensureActive()
