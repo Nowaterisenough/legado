@@ -26,7 +26,7 @@ def gitCommits = Integer.parseInt('git rev-list HEAD --count'.execute().text.tri
 
 android {
     compileSdk = compile_sdk_version
-    namespace 'io.legado.app'
+    namespace = 'io.legado.app'
     kotlin {
         jvmToolchain {
             languageVersion.set(JavaLanguageVersion.of(17))
@@ -36,12 +36,12 @@ android {
     signingConfigs {
         if (project.hasProperty("RELEASE_STORE_FILE")) {
             myConfig {
-                storeFile file(RELEASE_STORE_FILE)
-                storePassword RELEASE_STORE_PASSWORD
-                keyAlias RELEASE_KEY_ALIAS
-                keyPassword RELEASE_KEY_PASSWORD
-                v1SigningEnabled true
-                v2SigningEnabled true
+                storeFile = file(RELEASE_STORE_FILE)
+                storePassword = RELEASE_STORE_PASSWORD
+                keyAlias = RELEASE_KEY_ALIAS
+                keyPassword = RELEASE_KEY_PASSWORD
+                v1SigningEnabled = true
+                v2SigningEnabled = true
                 enableV3Signing = true
                 enableV4Signing = true
             }
@@ -70,34 +70,34 @@ android {
         }
     }
     buildFeatures {
-        buildConfig true
-        viewBinding true
+        buildConfig = true
+        viewBinding = true
     }
     buildTypes {
         release {
             if (project.hasProperty("RELEASE_STORE_FILE")) {
-                signingConfig signingConfigs.myConfig
+                signingConfig = signingConfigs.myConfig
             }
-            applicationIdSuffix '.release'
+            applicationIdSuffix = '.release'
             if (getApplicationIdSuffix() == '.releaseA') {
                 manifestPlaceholders.put("app_name", "@string/app_name_a")
             } else {
                 manifestPlaceholders.put("app_name", "@string/app_name")
             }
 
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'cronet-proguard-rules.pro'
         }
         debug {
             if (project.hasProperty("RELEASE_STORE_FILE")) {
-                signingConfig signingConfigs.myConfig
+                signingConfig = signingConfigs.myConfig
             }
             manifestPlaceholders.put("app_name", "@string/app_name")
 
-            applicationIdSuffix '.debug'
-            versionNameSuffix 'debug'
-            minifyEnabled false
+            applicationIdSuffix = '.debug'
+            versionNameSuffix = 'debug'
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'cronet-proguard-rules.pro'
         }
     }
@@ -110,16 +110,18 @@ android {
         }
     }
 
-    android.applicationVariants.configureEach { variant ->
-        variant.outputs.configureEach {
-            def flavor = variant.productFlavors[0].name
-            outputFileName = "${name}_${flavor}_${defaultConfig.versionName}.apk"
+    // AGP 9.0 changed API: applicationVariants -> onVariants
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            variant.outputs.forEach { output ->
+                def flavorName = variant.flavorName ?: 'app'
+                output.outputFileName = "${name}_${flavorName}_${defaultConfig.versionName}.apk"
+            }
         }
     }
 
-
     room {
-        schemaDirectory "$projectDir/schemas"
+        schemaDirectory("$projectDir/schemas")
     }
     // 设定Room的KSP参数
     ksp {
