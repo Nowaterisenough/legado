@@ -144,7 +144,7 @@ object AppWebDav {
                 coroutineContext.ensureActive()
                 val errorMsg = e.message ?: "${e.javaClass.simpleName}（无错误信息）"
                 AppLog.put("恢复WebDAV备份失败: $errorMsg", e)
-                throw WebDavException("恢复备份失败: $errorMsg", e)
+                throw WebDavException("恢复备份失败: $errorMsg")
             }
         } ?: throw NoStackTraceException("WebDAV未配置")
     }
