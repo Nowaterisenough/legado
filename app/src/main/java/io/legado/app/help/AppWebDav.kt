@@ -157,6 +157,28 @@ object AppWebDav {
         return false
     }
 
+    /**
+     * 从备份文件名解析时间戳
+     * 文件名格式: backup2025-10-17-1760709286000.zip 或 backup2025-10-17-DeviceName-1760709286000.zip
+     * @return 时间戳，解析失败返回0
+     */
+    fun parseTimestampFromBackupName(fileName: String): Long {
+        return try {
+            // 移除.zip后缀和backup前缀
+            val name = fileName.removeSuffix(".zip").removePrefix("backup")
+            // 提取最后一个横杠后的数字（时间戳）
+            val lastIndex = name.lastIndexOf('-')
+            if (lastIndex >= 0) {
+                name.substring(lastIndex + 1).toLongOrNull() ?: 0L
+            } else {
+                0L
+            }
+        } catch (e: Exception) {
+            AppLog.put("解析备份文件名时间戳失败: $fileName\n${e.localizedMessage}")
+            0L
+        }
+    }
+
     suspend fun lastBackUp(): Result<WebDavFile?> {
         return kotlin.runCatching {
             if (!NetworkUtils.isAvailable()) {
@@ -167,12 +189,16 @@ object AppWebDav {
                 val files = WebDav(rootWebDavUrl, it).listFiles()
                 AppLog.put("获取到${files.size}个文件")
                 var lastBackupFile: WebDavFile? = null
-                files.reversed().forEach { webDavFile ->
+                var lastTimestamp = 0L
+                files.forEach { webDavFile ->
                     if (webDavFile.displayName.startsWith("backup")) {
-                        if (lastBackupFile == null
-                            || webDavFile.lastModify > (lastBackupFile?.lastModify ?: 0)
-                        ) {
+                        // 优先使用文件名中的时间戳，如果解析失败则使用lastModify
+                        val timestamp = parseTimestampFromBackupName(webDavFile.displayName)
+                        val effectiveTimestamp = if (timestamp > 0) timestamp else webDavFile.lastModify
+
+                        if (lastBackupFile == null || effectiveTimestamp > lastTimestamp) {
                             lastBackupFile = webDavFile
+                            lastTimestamp = effectiveTimestamp
                         }
                     }
                 }

@@ -237,10 +237,11 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
     }
 
     /**
-     * 智能双向同步WebDAV备份
-     * 策略：比较远端备份的lastModify和本地的LocalConfig.lastDataChange
-     * - 远端更新：先恢复备份再更新书籍
-     * - 本地更新：先更新书籍再备份
+     * 检查并同步WebDAV备份，然后更新书籍
+     * 使用lastDataChangeTime记录本地数据变化时间
+     * 对比本地和远端时间戳：
+     * - 如果本地更新，先更新书籍信息再备份到远端
+     * - 如果远端更新，先恢复远端备份再更新书籍信息
      */
     private fun checkAndRestoreBackupThenUpdate() {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -252,8 +253,8 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                     return@launch
                 }
 
-                // 获取远端最新备份
-                AppLog.put("开始检查WebDAV备份...")
+                // 获取最新的远端备份文件
+                AppLog.put("开始检查远端备份...")
                 val lastBackupResult = AppWebDav.lastBackUp()
 
                 if (lastBackupResult.isFailure) {
@@ -269,69 +270,60 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                     return@launch
                 }
 
-                val remoteBackupFile = lastBackupResult.getOrNull()
-                val remoteLastModify = remoteBackupFile?.lastModify ?: 0L
-                val localLastDataChange = LocalConfig.lastDataChange
+                val lastBackupFile = lastBackupResult.getOrNull()
 
-                AppLog.put(
-                    "远端备份: ${remoteBackupFile?.displayName ?: "无"} (时间戳: $remoteLastModify), " +
-                            "本地最后数据变化: $localLastDataChange"
-                )
+                // 获取本地数据变化时间戳
+                val localDataChangeTime = context?.getPrefLong(PreferKey.lastDataChangeTime) ?: 0L
 
                 when {
-                    remoteBackupFile == null -> {
-                        // 无远端备份，先更新再备份
-                        AppLog.put("未发现远端备份，更新后将首次备份")
-                        context?.toastOnUi("未发现远端备份，更新后将备份")
+                    lastBackupFile == null -> {
+                        // 没有远端备份，先更新书籍再备份
+                        AppLog.put("未发现远端备份，更新后将备份到WebDAV")
+                        context?.toastOnUi("未发现远端备份，更新后将备份到WebDAV")
                         activityViewModel.upToc(booksAdapter.getItems())
                         delay(2000)
+                        // 备份到远端并更新本地数据变化时间
                         context?.let { ctx ->
+                            val currentTime = System.currentTimeMillis()
+                            AppLog.put("开始备份到WebDAV...")
                             Backup.backupLocked(ctx, AppConfig.backupPath)
-                            LocalConfig.lastDataChange = LocalConfig.lastBackup
-                            AppLog.put("首次备份完成，时间戳: ${LocalConfig.lastBackup}")
+                            ctx.putPrefLong(PreferKey.lastDataChangeTime, currentTime)
+                            AppLog.put("备份到WebDAV完成，更新本地时间戳: $currentTime")
                             toastOnUi("备份到WebDAV完成")
                         }
                     }
-
-                    remoteLastModify == 0L -> {
-                        // 时间戳解析失败，保守起见先恢复
-                        AppLog.put("警告：远端时间戳解析失败，将恢复远端备份")
-                        context?.toastOnUi("远端时间戳异常，正在恢复...")
-                        AppWebDav.restoreWebDav(remoteBackupFile.displayName)
-                        LocalConfig.lastDataChange = System.currentTimeMillis()
-                        AppLog.put("恢复完成，更新lastDataChange: ${LocalConfig.lastDataChange}")
-                        context?.toastOnUi("恢复完成，开始更新书籍")
-                        delay(1000)
-                        activityViewModel.upToc(booksAdapter.getItems())
-                    }
-
-                    remoteLastModify > localLastDataChange -> {
-                        // 远端更新，先恢复再更新
-                        AppLog.put(
-                            "远端备份更新 (远端:$remoteLastModify > 本地:$localLastDataChange)，" +
-                                    "先恢复备份"
-                        )
-                        context?.toastOnUi("发现新的远端备份，正在恢复...")
-                        AppWebDav.restoreWebDav(remoteBackupFile.displayName)
-                        LocalConfig.lastDataChange = remoteLastModify
-                        AppLog.put("恢复完成，更新lastDataChange: ${LocalConfig.lastDataChange}")
-                        context?.toastOnUi("恢复完成，开始更新书籍")
-                        delay(1000)
-                        activityViewModel.upToc(booksAdapter.getItems())
-                    }
-
                     else -> {
-                        // 本地更新或相等，先更新再备份
-                        AppLog.put(
-                            "本地数据更新 (本地:$localLastDataChange >= 远端:$remoteLastModify)，" +
-                                    "先更新再备份"
-                        )
-                        activityViewModel.upToc(booksAdapter.getItems())
-                        delay(2000)
-                        context?.let { ctx ->
-                            Backup.backupLocked(ctx, AppConfig.backupPath)
-                            LocalConfig.lastDataChange = LocalConfig.lastBackup
-                            AppLog.put("备份完成，时间戳: ${LocalConfig.lastBackup}")
+                        // 解析远端备份的时间戳（从文件名）
+                        val remoteTimestamp = AppWebDav.parseTimestampFromBackupName(lastBackupFile.displayName)
+                        // 如果文件名没有时间戳，使用lastModify
+                        val remoteTime = if (remoteTimestamp > 0) remoteTimestamp else lastBackupFile.lastModify
+
+                        AppLog.put("远端备份: ${lastBackupFile.displayName}, 远端时间: $remoteTime, 本地时间: $localDataChangeTime")
+
+                        if (remoteTime > localDataChangeTime) {
+                            // 远端备份更新，先恢复备份再更新书籍
+                            AppLog.put("远端备份较新 ($remoteTime > $localDataChangeTime)，开始恢复...")
+                            context?.toastOnUi("发现新的远端备份，正在恢复...")
+                            AppWebDav.restoreWebDav(lastBackupFile.displayName)
+                            // 恢复完成后，更新本地时间戳为远端时间
+                            context?.putPrefLong(PreferKey.lastDataChangeTime, remoteTime)
+                            AppLog.put("备份恢复完成，更新本地时间戳: $remoteTime")
+                            context?.toastOnUi("备份恢复完成，开始更新书籍")
+                            delay(1000)
+                            activityViewModel.upToc(booksAdapter.getItems())
+                        } else {
+                            // 本地更新或时间相同，先更新书籍再备份
+                            AppLog.put("本地数据较新或相同 ($localDataChangeTime >= $remoteTime)，先更新再备份")
+                            activityViewModel.upToc(booksAdapter.getItems())
+                            delay(2000)
+                            // 备份到远端
+                            context?.let { ctx ->
+                                val currentTime = System.currentTimeMillis()
+                                AppLog.put("开始备份到WebDAV...")
+                                Backup.backupLocked(ctx, AppConfig.backupPath)
+                                ctx.putPrefLong(PreferKey.lastDataChangeTime, currentTime)
+                                AppLog.put("备份到WebDAV完成，更新本地时间戳: $currentTime")
+                            }
                         }
                     }
                 }

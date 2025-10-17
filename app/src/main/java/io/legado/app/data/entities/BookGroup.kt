@@ -6,6 +6,8 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import io.legado.app.R
+import io.legado.app.data.appDb
+import io.legado.app.help.DataChangeMonitor
 import io.legado.app.help.config.AppConfig
 import kotlinx.parcelize.Parcelize
 
@@ -70,6 +72,18 @@ data class BookGroup(
                     && other.order == order
         }
         return false
+    }
+
+    fun save() {
+        appDb.bookGroupDao.insert(this)
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyBookGroupChanged()
+    }
+
+    fun delete() {
+        appDb.bookGroupDao.delete(this)
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyBookGroupChanged()
     }
 
 }

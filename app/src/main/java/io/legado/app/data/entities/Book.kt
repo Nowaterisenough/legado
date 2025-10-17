@@ -12,6 +12,7 @@ import io.legado.app.constant.AppPattern
 import io.legado.app.constant.BookType
 import io.legado.app.constant.PageAnim
 import io.legado.app.data.appDb
+import io.legado.app.help.DataChangeMonitor
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.book.getFolderNameNoCache
@@ -370,6 +371,8 @@ data class Book(
         } else {
             appDb.bookDao.insert(this)
         }
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyBookChanged()
     }
 
     fun delete() {
@@ -377,6 +380,8 @@ data class Book(
             ReadBook.book = null
         }
         appDb.bookDao.delete(this)
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyBookChanged()
     }
 
     @Suppress("ConstPropertyName")

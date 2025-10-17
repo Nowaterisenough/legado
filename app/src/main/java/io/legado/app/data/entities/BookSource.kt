@@ -10,12 +10,14 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import io.legado.app.constant.AppPattern
 import io.legado.app.constant.BookSourceType
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.rule.BookInfoRule
 import io.legado.app.data.entities.rule.ContentRule
 import io.legado.app.data.entities.rule.ExploreRule
 import io.legado.app.data.entities.rule.ReviewRule
 import io.legado.app.data.entities.rule.SearchRule
 import io.legado.app.data.entities.rule.TocRule
+import io.legado.app.help.DataChangeMonitor
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.splitNotBlank
@@ -257,6 +259,18 @@ data class BookSource(
     }
 
     private fun equal(a: String?, b: String?) = a == b || (a.isNullOrEmpty() && b.isNullOrEmpty())
+
+    fun save() {
+        appDb.bookSourceDao.insert(this)
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyBookSourceChanged()
+    }
+
+    fun delete() {
+        appDb.bookSourceDao.delete(this)
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyBookSourceChanged()
+    }
 
     class Converters {
 

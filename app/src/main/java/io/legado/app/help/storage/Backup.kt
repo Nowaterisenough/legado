@@ -70,19 +70,46 @@ object Backup {
     }
 
     private fun getNowZipFileName(): String {
+        val currentTime = System.currentTimeMillis()
         val backupDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            .format(Date(System.currentTimeMillis()))
+            .format(Date(currentTime))
         val deviceName = AppConfig.webDavDeviceName
         return if (deviceName?.isNotBlank() == true) {
-            "backup${backupDate}-${deviceName}.zip"
+            "backup${backupDate}-${deviceName}-${currentTime}.zip"
         } else {
-            "backup${backupDate}.zip"
+            "backup${backupDate}-${currentTime}.zip"
         }
     }
 
     private fun shouldBackup(): Boolean {
         val lastBackup = LocalConfig.lastBackup
         return lastBackup + TimeUnit.DAYS.toMillis(1) < System.currentTimeMillis()
+    }
+
+    /**
+     * 数据变化时更新时间戳并触发备份
+     * 当书籍、书源、订阅、分组等数据变化时调用此方法
+     */
+    fun onDataChange(context: Context) {
+        val currentTime = System.currentTimeMillis()
+        // 更新本地数据变化时间戳
+        context.putPrefLong(PreferKey.lastDataChangeTime, currentTime)
+        AppLog.put("数据变化，更新本地时间戳: $currentTime")
+
+        // 触发自动备份
+        if (AppWebDav.isOk) {
+            Coroutine.async {
+                mutex.withLock {
+                    try {
+                        AppLog.put("数据变化，开始自动备份...")
+                        backup(context, AppConfig.backupPath)
+                        AppLog.put("数据变化自动备份完成")
+                    } catch (e: Exception) {
+                        AppLog.put("数据变化自动备份失败\n${e.localizedMessage}", e)
+                    }
+                }
+            }
+        }
     }
 
     fun autoBack(context: Context) {

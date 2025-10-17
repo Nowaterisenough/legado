@@ -7,6 +7,8 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import io.legado.app.constant.AppPattern
+import io.legado.app.data.appDb
+import io.legado.app.help.DataChangeMonitor
 import io.legado.app.utils.splitNotBlank
 import kotlinx.parcelize.Parcelize
 
@@ -177,6 +179,18 @@ data class RssSource(
         } else {
             "${variableComment}\n$otherComment"
         }
+    }
+
+    fun save() {
+        appDb.rssSourceDao.insert(this)
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyRssSourceChanged()
+    }
+
+    fun delete() {
+        appDb.rssSourceDao.delete(this)
+        // 通知数据变化，触发自动备份
+        DataChangeMonitor.notifyRssSourceChanged()
     }
 
 }
