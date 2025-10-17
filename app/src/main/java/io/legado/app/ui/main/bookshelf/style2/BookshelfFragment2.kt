@@ -289,16 +289,20 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
 
                 when {
                     lastBackupFile == null -> {
-                        // 没有远端备份，先更新书籍再备份
-                        AppLog.put("未发现远端备份，更新后将备份到WebDAV")
-                        context?.toastOnUi("未发现远端备份，更新后将备份到WebDAV")
+                        // 没有远端备份，先更新书籍再尝试备份
+                        AppLog.put("未发现远端备份，将在更新后尝试备份")
                         activityViewModel.upToc(books)
                         delay(2000)
-                        // 备份到远端(backup方法会自动更新本地时间戳)
+                        // 尝试备份到远端(backup方法会自动更新本地时间戳)
                         context?.let { ctx ->
-                            AppLog.put("开始备份到WebDAV...")
-                            Backup.backupLocked(ctx, AppConfig.backupPath)
-                            toastOnUi("备份到WebDAV完成")
+                            try {
+                                AppLog.put("开始备份到WebDAV...")
+                                Backup.backupLocked(ctx, AppConfig.backupPath)
+                                toastOnUi("首次备份到WebDAV完成")
+                            } catch (e: Exception) {
+                                AppLog.put("首次备份失败: ${e.localizedMessage}", e)
+                                toastOnUi("备份失败: ${e.localizedMessage}")
+                            }
                         }
                     }
                     else -> {
