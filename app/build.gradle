@@ -111,11 +111,13 @@ android {
     }
 
     // AGP 9.0 changed API: applicationVariants -> onVariants
+    // Note: outputFileName is read-only, use outputFileName.set() in finalizeDsl
     androidComponents {
         onVariants(selector().all()) { variant ->
-            variant.outputs.forEach { output ->
+            variant.outputs.all { output ->
                 def flavorName = variant.flavorName ?: 'app'
-                output.outputFileName = "${name}_${flavorName}_${defaultConfig.versionName}.apk"
+                def fileName = "${name}_${flavorName}_${variant.buildType}.apk"
+                output.outputFileName.set(fileName)
             }
         }
     }
@@ -134,10 +136,10 @@ android {
 
     compileOptions {
         // Flag to enable support for the new language APIs
-        coreLibraryDesugaringEnabled true
+        coreLibraryDesugaringEnabled = true
         // Sets Java compatibility
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     packaging {
         resources.excludes.add('META-INF/*')
@@ -148,7 +150,7 @@ android {
         androidTest.assets.srcDirs += files("$projectDir/schemas".toString())
     }
     lint {
-        checkDependencies true
+        checkDependencies = true
     }
     tasks.withType(JavaCompile).tap {
         configureEach {
