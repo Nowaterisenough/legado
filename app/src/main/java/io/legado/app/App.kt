@@ -47,7 +47,6 @@ import io.legado.app.help.http.ObsoleteUrlFactory
 import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.rhino.NativeBaseSource
 import io.legado.app.help.source.SourceHelp
-import io.legado.app.help.storage.AutoBackupObserver
 import io.legado.app.help.storage.Backup
 import io.legado.app.model.BookCover
 import io.legado.app.utils.ChineseUtils
@@ -121,8 +120,6 @@ class App : Application() {
             if (AppConfig.syncBookProgress) {
                 AppWebDav.downloadAllBookProgress()
             }
-            //初始化自动备份观察器
-            AutoBackupObserver.init()
         }
     }
 
