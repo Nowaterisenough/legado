@@ -138,21 +138,28 @@ object AppWebDav {
 
     suspend fun lastBackUp(): Result<WebDavFile?> {
         return kotlin.runCatching {
+            if (!NetworkUtils.isAvailable()) {
+                throw NoStackTraceException("网络未连接")
+            }
             authorization?.let {
+                AppLog.put("开始获取WebDAV文件列表: $rootWebDavUrl")
+                val files = WebDav(rootWebDavUrl, it).listFiles()
+                AppLog.put("获取到${files.size}个文件")
                 var lastBackupFile: WebDavFile? = null
-                WebDav(rootWebDavUrl, it).listFiles().reversed().forEach { webDavFile ->
+                files.reversed().forEach { webDavFile ->
                     if (webDavFile.displayName.startsWith("backup")) {
                         if (lastBackupFile == null
-                            || webDavFile.lastModify > lastBackupFile.lastModify
+                            || webDavFile.lastModify > (lastBackupFile?.lastModify ?: 0)
                         ) {
                             lastBackupFile = webDavFile
                         }
                     }
                 }
                 lastBackupFile
-            }
+            } ?: throw NoStackTraceException("WebDAV未配置")
         }.onFailure {
             coroutineContext.ensureActive()
+            AppLog.put("lastBackUp()失败: ${it.javaClass.simpleName} - ${it.message}", it)
         }
     }
 

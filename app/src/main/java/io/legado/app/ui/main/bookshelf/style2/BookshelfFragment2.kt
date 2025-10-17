@@ -270,7 +270,11 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
 
                 if (lastBackupResult.isFailure) {
                     val exception = lastBackupResult.exceptionOrNull()
-                    val errorMsg = exception?.message ?: "未知错误"
+                    val errorMsg = when {
+                        exception == null -> "未知错误（异常为null）"
+                        exception.message != null -> exception.message!!
+                        else -> "${exception.javaClass.simpleName}（无错误信息）"
+                    }
                     AppLog.put("获取远端备份失败: $errorMsg", exception)
                     context?.toastOnUi("检查WebDAV备份失败: $errorMsg")
                     activityViewModel.upToc(books)
