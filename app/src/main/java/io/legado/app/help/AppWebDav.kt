@@ -119,13 +119,34 @@ object AppWebDav {
 
     @Throws(WebDavException::class)
     suspend fun restoreWebDav(name: String) {
-        authorization?.let {
-            val webDav = WebDav(rootWebDavUrl + name, it)
-            webDav.downloadTo(Backup.zipFilePath, true)
-            FileUtils.delete(Backup.backupPath)
-            ZipUtils.unZipToPath(File(Backup.zipFilePath), Backup.backupPath)
-            Restore.restoreLocked(Backup.backupPath)
+        if (!NetworkUtils.isAvailable()) {
+            throw NoStackTraceException("网络未连接")
         }
+        authorization?.let {
+            try {
+                AppLog.put("开始恢复WebDAV备份: $name")
+                val webDav = WebDav(rootWebDavUrl + name, it)
+
+                AppLog.put("下载备份文件到: ${Backup.zipFilePath}")
+                webDav.downloadTo(Backup.zipFilePath, true)
+
+                AppLog.put("删除旧备份目录: ${Backup.backupPath}")
+                FileUtils.delete(Backup.backupPath)
+
+                AppLog.put("解压备份文件...")
+                ZipUtils.unZipToPath(File(Backup.zipFilePath), Backup.backupPath)
+
+                AppLog.put("开始恢复数据...")
+                Restore.restoreLocked(Backup.backupPath)
+
+                AppLog.put("WebDAV备份恢复完成")
+            } catch (e: Exception) {
+                coroutineContext.ensureActive()
+                val errorMsg = e.message ?: "${e.javaClass.simpleName}（无错误信息）"
+                AppLog.put("恢复WebDAV备份失败: $errorMsg", e)
+                throw WebDavException("恢复备份失败: $errorMsg", e)
+            }
+        } ?: throw NoStackTraceException("WebDAV未配置")
     }
 
     suspend fun hasBackUp(backUpName: String): Boolean {
