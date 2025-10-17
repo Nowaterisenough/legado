@@ -7,7 +7,8 @@ plugins {
 //    id "com.google.gms.google-services"
 
     alias libs.plugins.android.application
-    alias libs.plugins.kotlin.android
+    // AGP 9.0+ has built-in Kotlin support, no need for kotlin.android plugin
+    // alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.room
     alias libs.plugins.ksp

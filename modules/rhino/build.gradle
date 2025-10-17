@@ -2,7 +2,8 @@ plugins {
     //d 'com.android.library'
     //id 'org.jetbrains.kotlin.android'
     alias libs.plugins.android.library
-    alias libs.plugins.kotlin.android
+    // AGP 9.0+ has built-in Kotlin support
+    // alias libs.plugins.kotlin.android
 }
 
 android {
