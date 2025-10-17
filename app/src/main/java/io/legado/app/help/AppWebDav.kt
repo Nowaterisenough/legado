@@ -187,14 +187,18 @@ object AppWebDav {
     /**
      * webDav备份
      * @param fileName 备份文件名
+     * @return 上传后的远端文件信息，失败返回null
      */
     @Throws(Exception::class)
-    suspend fun backUpWebDav(fileName: String) {
-        if (!NetworkUtils.isAvailable()) return
+    suspend fun backUpWebDav(fileName: String): WebDavFile? {
+        if (!NetworkUtils.isAvailable()) return null
         authorization?.let {
             val putUrl = "$rootWebDavUrl$fileName"
             WebDav(putUrl, it).upload(Backup.zipFilePath)
+            // 上传成功后，获取远端文件信息（包含服务器时间戳）
+            return WebDav(putUrl, it).getWebDavFile()
         }
+        return null
     }
 
     /**

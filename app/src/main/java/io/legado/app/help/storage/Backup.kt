@@ -212,7 +212,12 @@ object Backup {
                 }
             }
             try {
-                AppWebDav.backUpWebDav(zipFileName)
+                val remoteFile = AppWebDav.backUpWebDav(zipFileName)
+                // 备份成功后，将远端文件的时间戳同步到本地，避免时间差导致误判
+                remoteFile?.let {
+                    LocalConfig.lastDataChange = it.lastModify
+                    AppLog.put("备份完成，时间戳: ${it.lastModify}")
+                }
             } catch (e: Exception) {
                 AppLog.put("上传备份至webdav失败\n$e", e)
             }
