@@ -7,7 +7,8 @@ plugins {
 //    id "com.google.gms.google-services"
 
     alias libs.plugins.android.application
-    alias libs.plugins.kotlin.android
+    // AGP 9.0+ has built-in Kotlin support, no need for kotlin.android plugin
+    // alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.room
     alias libs.plugins.ksp
@@ -25,7 +26,7 @@ def gitCommits = Integer.parseInt('git rev-list HEAD --count'.execute().text.tri
 
 android {
     compileSdk = compile_sdk_version
-    namespace 'io.legado.app'
+    namespace = 'io.legado.app'
     kotlin {
         jvmToolchain {
             languageVersion.set(JavaLanguageVersion.of(17))
@@ -35,12 +36,12 @@ android {
     signingConfigs {
         if (project.hasProperty("RELEASE_STORE_FILE")) {
             myConfig {
-                storeFile file(RELEASE_STORE_FILE)
-                storePassword RELEASE_STORE_PASSWORD
-                keyAlias RELEASE_KEY_ALIAS
-                keyPassword RELEASE_KEY_PASSWORD
-                v1SigningEnabled true
-                v2SigningEnabled true
+                storeFile = file(RELEASE_STORE_FILE)
+                storePassword = RELEASE_STORE_PASSWORD
+                keyAlias = RELEASE_KEY_ALIAS
+                keyPassword = RELEASE_KEY_PASSWORD
+                v1SigningEnabled = true
+                v2SigningEnabled = true
                 enableV3Signing = true
                 enableV4Signing = true
             }
@@ -69,34 +70,34 @@ android {
         }
     }
     buildFeatures {
-        buildConfig true
-        viewBinding true
+        buildConfig = true
+        viewBinding = true
     }
     buildTypes {
         release {
             if (project.hasProperty("RELEASE_STORE_FILE")) {
-                signingConfig signingConfigs.myConfig
+                signingConfig = signingConfigs.myConfig
             }
-            applicationIdSuffix '.release'
+            applicationIdSuffix = '.release'
             if (getApplicationIdSuffix() == '.releaseA') {
                 manifestPlaceholders.put("app_name", "@string/app_name_a")
             } else {
                 manifestPlaceholders.put("app_name", "@string/app_name")
             }
 
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'cronet-proguard-rules.pro'
         }
         debug {
             if (project.hasProperty("RELEASE_STORE_FILE")) {
-                signingConfig signingConfigs.myConfig
+                signingConfig = signingConfigs.myConfig
             }
             manifestPlaceholders.put("app_name", "@string/app_name")
 
-            applicationIdSuffix '.debug'
-            versionNameSuffix 'debug'
-            minifyEnabled false
+            applicationIdSuffix = '.debug'
+            versionNameSuffix = 'debug'
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'cronet-proguard-rules.pro'
         }
     }
@@ -109,16 +110,20 @@ android {
         }
     }
 
-    android.applicationVariants.configureEach { variant ->
-        variant.outputs.configureEach {
-            def flavor = variant.productFlavors[0].name
-            outputFileName = "${name}_${flavor}_${defaultConfig.versionName}.apk"
+    // AGP 9.0 changed API: applicationVariants -> onVariants
+    // Note: outputFileName is read-only, use outputFileName.set()
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            variant.outputs.each { output ->
+                def flavorName = variant.flavorName ?: 'app'
+                def fileName = "${name}_${flavorName}_${variant.buildType}.apk"
+                output.outputFileName.set(fileName)
+            }
         }
     }
 
-
     room {
-        schemaDirectory "$projectDir/schemas"
+        schemaDirectory("$projectDir/schemas")
     }
     // 设定Room的KSP参数
     ksp {
@@ -131,10 +136,10 @@ android {
 
     compileOptions {
         // Flag to enable support for the new language APIs
-        coreLibraryDesugaringEnabled true
+        coreLibraryDesugaringEnabled = true
         // Sets Java compatibility
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     packaging {
         resources.excludes.add('META-INF/*')
@@ -145,7 +150,7 @@ android {
         androidTest.assets.srcDirs += files("$projectDir/schemas".toString())
     }
     lint {
-        checkDependencies true
+        checkDependencies = true
     }
     tasks.withType(JavaCompile).tap {
         configureEach {
