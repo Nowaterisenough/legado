@@ -404,11 +404,13 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                             context?.toastOnUi("备份恢复完成，开始更新书籍")
                             // 等待一小段时间让数据库更新生效
                             delay(500)
+                            // 从数据库重新读取恢复后的书籍列表
+                            val restoredBooks = appDb.bookDao.getBooksByGroup(groupId)
+                            AppLog.put("从数据库读取到 ${restoredBooks.size} 本书籍")
                             // 开始更新书籍
-                            val books = booksAdapter.getItems()
-                            activityViewModel.upToc(books)
+                            activityViewModel.upToc(restoredBooks)
                             // 等待所有书籍更新完成
-                            waitForBooksUpdateComplete(books)
+                            waitForBooksUpdateComplete(restoredBooks)
                             AppLog.put("书籍更新完成")
                         } else {
                             // 本地更新或时间相同，先更新书籍再备份
@@ -428,11 +430,6 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                     }
                 }
 
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                // 协程被取消（通常是因为恢复备份后数据库变化触发了新的同步）
-                // 这是正常情况，不需要处理，Flow会自动更新界面
-                AppLog.put("WebDAV同步协程被取消（正常）")
-                throw e  // 重新抛出以正确传播取消信号
             } catch (e: Exception) {
                 AppLog.put("WebDAV同步失败: ${e.localizedMessage}", e)
                 context?.toastOnUi("WebDAV同步失败: ${e.localizedMessage}")
