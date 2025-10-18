@@ -79,6 +79,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     override var books: List<Book> = emptyList()
     private var enableRefresh = true
     private var isSyncing = false // 防止重复触发同步
+    private var syncJob: Job? = null // 保存同步任务，用于取消和监控
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         setSupportToolbar(binding.titleBar.toolbar)
@@ -337,7 +338,10 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
             return
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        // 取消之前的同步任务（如果有）
+        syncJob?.cancel()
+
+        syncJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
                 isSyncing = true
                 binding.refreshLayout.isRefreshing = true  // 显示同步进度
@@ -463,6 +467,14 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                 AppLog.put("同步操作结束，重置同步标志")
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Fragment销毁时，取消同步任务并重置标志
+        syncJob?.cancel()
+        isSyncing = false
+        AppLog.put("Fragment销毁，重置同步标志")
     }
 
     override fun getItems(): List<Any> {

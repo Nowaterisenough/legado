@@ -88,6 +88,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
     private var upLastUpdateTimeJob: Job? = null
     private var enableRefresh = true
     private var isSyncing = false // 防止重复触发同步
+    private var syncJob: Job? = null // 保存同步任务，用于取消和监控
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         arguments?.let {
@@ -325,7 +326,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
             return
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        // 取消之前的同步任务（如果有）
+        syncJob?.cancel()
+
+        syncJob = viewLifecycleOwner.lifecycleScope.launch {
             try {
                 isSyncing = true
                 binding.refreshLayout.isRefreshing = true  // 显示同步进度
@@ -460,6 +464,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Fragment销毁时，取消同步任务并重置标志
+        syncJob?.cancel()
+        isSyncing = false
+        AppLog.put("Fragment销毁，重置同步标志")
         /**
          * 将 RecyclerView 中的视图全部回收到 RecycledViewPool 中
          */
