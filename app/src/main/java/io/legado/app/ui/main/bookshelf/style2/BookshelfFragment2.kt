@@ -91,7 +91,6 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         binding.rvBookshelf.setEdgeEffectColor(primaryColor)
         binding.refreshLayout.setColorSchemeColors(accentColor)
         binding.refreshLayout.setOnRefreshListener {
-            binding.refreshLayout.isRefreshing = false
             checkAndRestoreBackupThenUpdate()
         }
         if (bookshelfLayout == 0) {
@@ -334,12 +333,14 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         if (isSyncing) {
             AppLog.put("同步操作正在进行中，忽略本次下拉刷新")
             context?.toastOnUi("同步操作正在进行中，请稍候")
+            binding.refreshLayout.isRefreshing = false
             return
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 isSyncing = true
+                binding.refreshLayout.isRefreshing = true
 
                 // 检查是否配置了WebDAV
                 if (!AppWebDav.isOk) {
@@ -362,7 +363,9 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     }
                     AppLog.put("获取远端备份失败: $errorMsg", exception)
                     context?.toastOnUi("检查WebDAV备份失败: $errorMsg")
+                    // 备份失败仍然执行更新
                     activityViewModel.upToc(books)
+                    waitForBooksUpdateComplete(books)
                     return@launch
                 }
 
@@ -444,8 +447,9 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                 activityViewModel.upToc(books)
                 waitForBooksUpdateComplete(books)
             } finally {
-                // 无论成功失败，都要重置同步标志
+                // 无论成功失败，都要重置同步标志和隐藏刷新动画
                 isSyncing = false
+                binding.refreshLayout.isRefreshing = false
                 AppLog.put("同步操作结束，重置同步标志")
             }
         }
