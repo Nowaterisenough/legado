@@ -415,18 +415,31 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                             // 远端备份更新，先恢复备份再更新书籍
                             AppLog.put("远端备份较新 ($remoteTime > $localDataChangeTime)，开始恢复...")
                             context?.toastOnUi("发现新的远端备份，正在恢复...")
+
+                            // 等待恢复完成
+                            AppLog.put("调用 restoreWebDav 开始恢复备份...")
                             AppWebDav.restoreWebDav(lastBackupFile.displayName)
+                            AppLog.put("restoreWebDav 调用完成")
+
                             // 恢复完成后，更新本地时间戳为远端时间
                             context?.putPrefLong(PreferKey.lastDataChangeTime, remoteTime)
                             AppLog.put("备份恢复完成，更新本地时间戳: $remoteTime")
-                            context?.toastOnUi("备份恢复完成，开始更新书籍")
-                            // 等待一小段时间让数据库更新生效
-                            delay(500)
+
+                            // 等待数据库更新生效 - 增加等待时间确保所有数据都已写入
+                            AppLog.put("等待数据库更新生效...")
+                            delay(2000)
+
                             // 从数据库重新读取恢复后的书籍列表
                             val restoredBooks = appDb.bookDao.getBooksByGroup(groupId)
                             AppLog.put("从数据库读取到 ${restoredBooks.size} 本书籍")
+
+                            context?.toastOnUi("备份恢复完成，开始更新书籍")
+
                             // 开始更新书籍
+                            AppLog.put("开始调用 upToc 更新书籍...")
                             activityViewModel.upToc(restoredBooks)
+                            AppLog.put("upToc 调用完成，开始等待更新完成...")
+
                             // 等待所有书籍更新完成
                             waitForBooksUpdateComplete(restoredBooks)
                             AppLog.put("书籍更新完成")
