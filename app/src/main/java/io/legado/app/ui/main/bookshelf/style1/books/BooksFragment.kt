@@ -23,6 +23,7 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
 import io.legado.app.databinding.FragmentBooksBinding
 import io.legado.app.help.AppWebDav
+import io.legado.app.help.book.isLocal
 import io.legado.app.help.storage.Backup
 import io.legado.app.constant.PreferKey
 import io.legado.app.help.config.AppConfig
