@@ -249,6 +249,43 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     }
 
     /**
+     * 等待书籍更新完成
+     * 通过检查ViewModel中的更新队列状态来判断是否完成
+     */
+    private suspend fun waitForBooksUpdateComplete(books: List<Book>) {
+        // 获取可能需要更新的书籍URL集合
+        val bookUrls = books.filter { !it.isLocal && it.canUpdate }.map { it.bookUrl }.toSet()
+        if (bookUrls.isEmpty()) {
+            return
+        }
+
+        // 等待这些书籍的更新完成
+        // 最多等待5分钟，避免无限等待
+        var waitTime = 0L
+        val maxWaitTime = 300_000L // 5分钟
+        val checkInterval = 500L // 每500ms检查一次
+
+        while (waitTime < maxWaitTime) {
+            // 检查是否还有我们关心的书籍在更新中
+            val stillUpdating = bookUrls.any { url ->
+                activityViewModel.isUpdate(url)
+            }
+
+            if (!stillUpdating) {
+                // 所有书籍都更新完成了
+                AppLog.put("所有书籍更新完成，耗时: ${waitTime}ms")
+                return
+            }
+
+            delay(checkInterval)
+            waitTime += checkInterval
+        }
+
+        // 超时了，记录日志但不抛出异常
+        AppLog.put("等待书籍更新超时(${maxWaitTime}ms)，可能部分书籍未完成更新")
+    }
+
+    /**
      * 检查并同步WebDAV备份，然后更新书籍
      * 使用lastDataChangeTime记录本地数据变化时间
      * 对比本地和远端时间戳：
@@ -292,7 +329,9 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                         // 没有远端备份，先更新书籍再尝试备份
                         AppLog.put("未发现远端备份，将在更新后尝试备份")
                         activityViewModel.upToc(books)
-                        delay(2000)
+                        // 等待所有书籍更新完成
+                        waitForBooksUpdateComplete(books)
+                        AppLog.put("书籍更新完成，开始首次备份...")
                         // 尝试备份到远端(backup方法会自动更新本地时间戳)
                         context?.let { ctx ->
                             try {
@@ -322,17 +361,25 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                             context?.putPrefLong(PreferKey.lastDataChangeTime, remoteTime)
                             AppLog.put("备份恢复完成，更新本地时间戳: $remoteTime")
                             context?.toastOnUi("备份恢复完成，开始更新书籍")
-                            delay(1000)
+                            // 等待一小段时间让数据库更新生效
+                            delay(500)
+                            // 开始更新书籍
                             activityViewModel.upToc(books)
+                            // 等待所有书籍更新完成
+                            waitForBooksUpdateComplete(books)
+                            AppLog.put("书籍更新完成")
                         } else {
                             // 本地更新或时间相同，先更新书籍再备份
                             AppLog.put("本地数据较新或相同 ($localDataChangeTime >= $remoteTime)，先更新再备份")
                             activityViewModel.upToc(books)
-                            delay(2000)
+                            // 等待所有书籍更新完成
+                            waitForBooksUpdateComplete(books)
+                            AppLog.put("书籍更新完成，开始备份...")
                             // 备份到远端(backup方法会自动更新本地时间戳)
                             context?.let { ctx ->
                                 AppLog.put("开始备份到WebDAV...")
                                 Backup.backupLocked(ctx, AppConfig.backupPath)
+                                AppLog.put("备份完成")
                             }
                         }
                     }
