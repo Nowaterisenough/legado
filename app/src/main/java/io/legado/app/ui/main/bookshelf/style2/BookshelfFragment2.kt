@@ -333,12 +333,14 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         if (isSyncing) {
             AppLog.put("同步操作正在进行中，忽略本次下拉刷新")
             context?.toastOnUi("同步操作正在进行中，请稍候")
+            binding.refreshLayout.isRefreshing = false  // 立即隐藏下拉动画
             return
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 isSyncing = true
+                binding.refreshLayout.isRefreshing = true  // 显示同步进度
 
                 // 检查是否配置了WebDAV
                 if (!AppWebDav.isOk) {
@@ -442,6 +444,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                         // 协程被取消，立即清理并重新抛出
                         AppLog.put("WebDAV同步被取消")
                         isSyncing = false
+                        binding.refreshLayout.isRefreshing = false
                         throw e
                     }
                     else -> {
@@ -454,8 +457,9 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                     }
                 }
             } finally {
-                // 无论成功失败，都要重置同步标志
+                // 无论成功失败，都要重置同步标志和隐藏动画
                 isSyncing = false
+                binding.refreshLayout.isRefreshing = false
                 AppLog.put("同步操作结束，重置同步标志")
             }
         }
