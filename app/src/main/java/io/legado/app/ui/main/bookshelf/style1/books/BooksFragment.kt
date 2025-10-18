@@ -87,6 +87,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         private set
     private var upLastUpdateTimeJob: Job? = null
     private var enableRefresh = true
+    private var isSyncing = false // 防止重复触发同步
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         arguments?.let {
@@ -245,25 +246,59 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         // 获取可能需要更新的书籍URL集合
         val bookUrls = books.filter { !it.isLocal && it.canUpdate }.map { it.bookUrl }.toSet()
         if (bookUrls.isEmpty()) {
+            AppLog.put("没有需要更新的书籍")
             return
         }
 
-        // 等待这些书籍的更新完成
-        // 最多等待5分钟，避免无限等待
-        var waitTime = 0L
-        val maxWaitTime = 300_000L // 5分钟
-        val checkInterval = 500L // 每500ms检查一次
+        AppLog.put("等待 ${bookUrls.size} 本书籍加入更新队列...")
 
-        while (waitTime < maxWaitTime) {
-            // 检查是否还有我们关心的书籍在更新中
-            val stillUpdating = bookUrls.any { url ->
+        // 第一阶段：等待书籍真正开始更新（加入onUpTocBooks）
+        // 因为upToc()是异步的，需要等待书籍真正进入更新状态
+        var waitTime = 0L
+        val maxStartWaitTime = 10_000L // 最多等待10秒让更新开始
+        val checkInterval = 200L // 每200ms检查一次
+        var hasStarted = false
+
+        while (waitTime < maxStartWaitTime) {
+            // 检查是否有我们关心的书籍开始更新了
+            val startedCount = bookUrls.count { url ->
                 activityViewModel.isUpdate(url)
             }
 
-            if (!stillUpdating) {
+            if (startedCount > 0) {
+                AppLog.put("已有 $startedCount 本书籍开始更新，等待全部完成...")
+                hasStarted = true
+                break
+            }
+
+            delay(checkInterval)
+            waitTime += checkInterval
+        }
+
+        if (!hasStarted) {
+            AppLog.put("等待更新开始超时(${waitTime}ms)，没有书籍进入更新队列")
+            return
+        }
+
+        // 第二阶段：等待所有书籍更新完成
+        waitTime = 0L
+        val maxUpdateWaitTime = 300_000L // 最多等待5分钟完成更新
+
+        while (waitTime < maxUpdateWaitTime) {
+            // 检查是否还有我们关心的书籍在更新中
+            val updatingCount = bookUrls.count { url ->
+                activityViewModel.isUpdate(url)
+            }
+
+            if (updatingCount == 0) {
                 // 所有书籍都更新完成了
-                AppLog.put("所有书籍更新完成，耗时: ${waitTime}ms")
+                AppLog.put("所有书籍更新完成，总耗时: ${waitTime}ms")
                 return
+            }
+
+            // 每隔一段时间打印进度
+            if (waitTime % 5000L == 0L) {
+                AppLog.put("还有 $updatingCount 本书籍正在更新中...")
             }
 
             delay(checkInterval)
@@ -271,7 +306,8 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         }
 
         // 超时了，记录日志但不抛出异常
-        AppLog.put("等待书籍更新超时(${maxWaitTime}ms)，可能部分书籍未完成更新")
+        val remainingCount = bookUrls.count { url -> activityViewModel.isUpdate(url) }
+        AppLog.put("等待书籍更新超时(${maxUpdateWaitTime}ms)，还有 $remainingCount 本书籍未完成更新")
     }
 
     /**
@@ -282,12 +318,23 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
      * - 如果远端更新，先恢复远端备份再更新书籍信息
      */
     private fun checkAndRestoreBackupThenUpdate() {
+        // 防止重复触发
+        if (isSyncing) {
+            AppLog.put("同步操作正在进行中，忽略本次下拉刷新")
+            context?.toastOnUi("同步操作正在进行中，请稍候")
+            return
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                isSyncing = true
+
                 // 检查是否配置了WebDAV
                 if (!AppWebDav.isOk) {
                     AppLog.put("WebDAV未配置，直接更新书籍")
-                    activityViewModel.upToc(booksAdapter.getItems())
+                    val books = booksAdapter.getItems()
+                    activityViewModel.upToc(books)
+                    waitForBooksUpdateComplete(books)
                     return@launch
                 }
 
@@ -386,7 +433,13 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
                 AppLog.put("WebDAV同步失败: ${e.localizedMessage}", e)
                 context?.toastOnUi("WebDAV同步失败: ${e.localizedMessage}")
                 // 出错时仍然执行更新
-                activityViewModel.upToc(booksAdapter.getItems())
+                val books = booksAdapter.getItems()
+                activityViewModel.upToc(books)
+                waitForBooksUpdateComplete(books)
+            } finally {
+                // 无论成功失败，都要重置同步标志
+                isSyncing = false
+                AppLog.put("同步操作结束，重置同步标志")
             }
         }
     }
