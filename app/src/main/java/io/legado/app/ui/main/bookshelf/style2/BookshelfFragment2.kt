@@ -272,7 +272,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         // 第一阶段：等待书籍真正开始更新（加入onUpTocBooks）
         // 因为upToc()是异步的，需要等待书籍真正进入更新状态
         var waitTime = 0L
-        val maxStartWaitTime = 10_000L // 最多等待10秒让更新开始
+        val maxStartWaitTime = 5_000L // 最多等待5秒让更新开始
         val checkInterval = 200L // 每200ms检查一次
         var hasStarted = false
 
@@ -293,13 +293,13 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         }
 
         if (!hasStarted) {
-            AppLog.put("等待更新开始超时(${waitTime}ms)，没有书籍进入更新队列")
+            AppLog.put("等待更新开始超时(${waitTime}ms)，书籍可能已在后台更新或无需更新")
             return
         }
 
         // 第二阶段：等待所有书籍更新完成
         waitTime = 0L
-        val maxUpdateWaitTime = 300_000L // 最多等待5分钟完成更新
+        val maxUpdateWaitTime = 30_000L // 最多等待30秒完成更新
 
         while (waitTime < maxUpdateWaitTime) {
             // 检查是否还有我们关心的书籍在更新中
