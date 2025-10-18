@@ -424,6 +424,16 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                             // 恢复完成后，更新本地时间戳为远端时间
                             context?.putPrefLong(PreferKey.lastDataChangeTime, remoteTime)
                             AppLog.put("备份恢复完成，更新本地时间戳: $remoteTime")
+
+                            // 恢复云端阅读进度
+                            AppLog.put("开始恢复云端阅读进度...")
+                            try {
+                                AppWebDav.downloadAllBookProgress()
+                                AppLog.put("云端阅读进度恢复完成")
+                            } catch (e: Exception) {
+                                AppLog.put("恢复云端阅读进度失败: ${e.localizedMessage}", e)
+                            }
+
                             context?.toastOnUi("备份恢复完成")
                         } else {
                             // 本地更新或时间相同，先更新书籍再备份
