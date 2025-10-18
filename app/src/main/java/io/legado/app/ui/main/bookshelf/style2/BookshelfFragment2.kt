@@ -439,11 +439,23 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                 }
 
             } catch (e: Exception) {
-                AppLog.put("WebDAV同步失败: ${e.localizedMessage}", e)
-                context?.toastOnUi("WebDAV同步失败: ${e.localizedMessage}")
-                // 出错时仍然执行更新
-                activityViewModel.upToc(books)
-                waitForBooksUpdateComplete(books)
+                when (e) {
+                    is kotlinx.coroutines.CancellationException -> {
+                        // 协程被取消，立即清理并重新抛出
+                        AppLog.put("WebDAV同步被取消")
+                        isSyncing = false
+                        binding.refreshLayout.isRefreshing = false
+                        throw e
+                    }
+                    else -> {
+                        // 其他异常，记录日志并继续更新
+                        AppLog.put("WebDAV同步失败: ${e.localizedMessage}", e)
+                        context?.toastOnUi("WebDAV同步失败: ${e.localizedMessage}")
+                        // 出错时仍然执行更新
+                        activityViewModel.upToc(books)
+                        waitForBooksUpdateComplete(books)
+                    }
+                }
             } finally {
                 // 无论成功失败，都要重置同步标志和隐藏刷新动画
                 isSyncing = false
