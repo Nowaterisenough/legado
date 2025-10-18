@@ -59,6 +59,13 @@ import kotlin.math.max
 class BooksFragment() : BaseFragment(R.layout.fragment_books),
     BaseBooksAdapter.CallBack {
 
+    companion object {
+        // 使用静态变量，避免Fragment重建时状态丢失
+        @Volatile
+        private var isSyncing = false
+        private var syncJob: Job? = null
+    }
+
     constructor(position: Int, group: BookGroup) : this() {
         val bundle = Bundle()
         bundle.putInt("position", position)
@@ -87,8 +94,6 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         private set
     private var upLastUpdateTimeJob: Job? = null
     private var enableRefresh = true
-    private var isSyncing = false // 防止重复触发同步
-    private var syncJob: Job? = null // 保存同步任务，用于取消和监控
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         arguments?.let {

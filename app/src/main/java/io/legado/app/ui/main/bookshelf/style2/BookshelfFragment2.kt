@@ -58,6 +58,13 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     SearchView.OnQueryTextListener,
     BaseBooksAdapter.CallBack {
 
+    companion object {
+        // 使用静态变量，避免Fragment重建时状态丢失
+        @Volatile
+        private var isSyncing = false
+        private var syncJob: Job? = null
+    }
+
     constructor(position: Int) : this() {
         val bundle = Bundle()
         bundle.putInt("position", position)
@@ -78,8 +85,6 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     override var groupId = BookGroup.IdRoot
     override var books: List<Book> = emptyList()
     private var enableRefresh = true
-    private var isSyncing = false // 防止重复触发同步
-    private var syncJob: Job? = null // 保存同步任务，用于取消和监控
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         setSupportToolbar(binding.titleBar.toolbar)
