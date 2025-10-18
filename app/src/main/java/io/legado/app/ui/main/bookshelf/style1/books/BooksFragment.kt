@@ -467,10 +467,8 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Fragment销毁时，取消同步任务并重置标志
-        syncJob?.cancel()
-        isSyncing = false
-        AppLog.put("Fragment销毁，重置同步标志")
+        // 注意：isSyncing和syncJob是companion object静态变量
+        // Fragment销毁不应该重置它们，否则会影响其他Fragment实例的同步任务
         /**
          * 将 RecyclerView 中的视图全部回收到 RecycledViewPool 中
          */
