@@ -26,9 +26,9 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
 
     private suspend fun getLatestRelease(): List<AppReleaseInfo> {
         val lastReleaseUrl = if (checkVariant.isBeta()) {
-            "https://api.github.com/repos/Nowaterisenough/legado/releases/tags/beta"
+            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/tags/beta"
         } else {
-            "https://api.github.com/repos/Nowaterisenough/legado/releases/latest"
+            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/latest"
         }
         val res = okHttpClient.newCallResponse {
             url(lastReleaseUrl)
