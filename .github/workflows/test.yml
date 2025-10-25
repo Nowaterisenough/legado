@@ -84,7 +84,7 @@ jobs:
           echo "修改APK文件名"
           mkdir -p ${{ github.workspace }}/apk/
           for file in `ls ${{ github.workspace }}/app/build/outputs/apk/*/*/*.apk`; do
-            mv "$file" ${{ github.workspace }}/apk/legado_${{ env.product }}_${{ env.VERSIONL }}.apk
+            mv "$file" ${{ github.workspace }}/apk/legado_${{ env.product }}_${{ env.VERSION }}.apk
           done
           echo "移动mapping文件"
           mkdir -p ${{ github.workspace }}/mapping/
@@ -155,7 +155,7 @@ jobs:
           echo "## 阅读 Legado ${{ env.VERSION }}" > release_notes.md
           echo "" >> release_notes.md
           echo "### 下载" >> release_notes.md
-          echo "- [legado_app_${{ env.VERSION }}.apk](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/legado_app_${{ env.VERSIONL }}.apk)" >> release_notes.md
+          echo "- [legado_app_${{ env.VERSION }}.apk](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/legado_app_${{ env.VERSION }}.apk)" >> release_notes.md
           echo "" >> release_notes.md
           echo "### 更新内容" >> release_notes.md
           echo "" >> release_notes.md
@@ -163,8 +163,6 @@ jobs:
           echo "" >> release_notes.md
           echo "---" >> release_notes.md
           echo "*自动构建版本*" >> release_notes.md
-        env:
-          VERSIONL: ${{ needs.prepare.outputs.versionL }}
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
