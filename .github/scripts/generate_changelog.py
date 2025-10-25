@@ -45,17 +45,17 @@ def run_command(cmd: str) -> str:
 
 
 def get_last_tag() -> str:
-    """获取上一个 tag (倒数第二个，因为最新的 tag 就是当前 release)"""
-    # 获取所有 tags，按版本号倒序排列，取第二个（跳过当前 tag）
+    """获取上一个 tag (最新的已存在 tag，因为新 tag 在 release 步骤才创建)"""
+    # 获取所有 tags，按版本号倒序排列，取第一个（最新的已发布版本）
     tags = run_command("git tag --sort=-v:refname")
     if not tags:
         return None
     tag_list = [t.strip() for t in tags.split('\n') if t.strip()]
-    # 如果只有一个或没有 tag，返回 None
-    if len(tag_list) < 2:
+    # 如果没有 tag，返回 None（首次发布）
+    if len(tag_list) < 1:
         return None
-    # 返回倒数第二个 tag
-    return tag_list[1]
+    # 返回最新的 tag（上一个版本）
+    return tag_list[0]
 
 
 def get_commits_since(since_ref: str = None) -> List[str]:
