@@ -93,6 +93,9 @@ class BadgeView @JvmOverloads constructor(
         setPadding(dip2Px(5f), dip2Px(1f), dip2Px(5f), dip2Px(1f))
         radius = radios.toFloat()
 
+        // Remove any highlight or selection background
+        highlightColor = Color.TRANSPARENT
+
         // set default background
         setBackground(radius, context.accentColor)
 
