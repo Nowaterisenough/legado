@@ -147,7 +147,11 @@ class BadgeView @JvmOverloads constructor(
     }
 
     fun setBadgeCount(count: Int) {
-        text = if (count == 0) "" else count.toString()
+        text = if (count == 0) "" else "更新${count}章"
+    }
+
+    fun setBadgeCount(count: Int, compact: Boolean) {
+        text = if (count == 0) "" else if (compact) "${count}章" else "更新${count}章"
     }
 
     fun setHighlight(highlight: Boolean) {
