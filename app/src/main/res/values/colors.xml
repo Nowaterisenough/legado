@@ -47,7 +47,7 @@
 
     <color name="light_translucent">#23000000</color>
     <color name="common_gray">#EEEEEE</color>
-    <color name="darker_gray">#aaaaaaaa</color>
+    <color name="darker_gray">#aaaaaa</color>
 
     <!-- 分格线背景色 -->
     <color name="bg_divider_line">#8fe0e0e0</color>
