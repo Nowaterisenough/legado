@@ -56,7 +56,7 @@ class AboutFragment : PreferenceFragmentCompat() {
     override fun onPreferenceTreeClick(preference: Preference): Boolean {
         when (preference.key) {
             "contributors" -> openUrl(R.string.contributors_url)
-            "update_log" -> showMdFile(getString(R.string.update_log), "updateLog.md")
+            "update_log" -> showUpdateLog()
             "check_update" -> checkUpdate()
             "mail" -> requireContext().sendMail(getString(R.string.email))
             "license" -> showMdFile(getString(R.string.license), "LICENSE.md")
@@ -81,6 +81,28 @@ class AboutFragment : PreferenceFragmentCompat() {
     private fun showMdFile(title: String, fileName: String) {
         val mdText = String(requireContext().assets.open(fileName).readBytes())
         showDialogFragment(TextDialog(title, mdText, TextDialog.Mode.MD))
+    }
+
+    /**
+     * 显示更新日志
+     */
+    private fun showUpdateLog() {
+        waitDialog.show()
+        (AppUpdate.gitHubUpdate as? AppUpdateGitHub)?.run {
+            getChangeLog(lifecycleScope)
+                .onSuccess { changeLog ->
+                    showDialogFragment(
+                        TextDialog(getString(R.string.update_log), changeLog, TextDialog.Mode.MD)
+                    )
+                }.onError {
+                    // 降级到本地文件
+                    appCtx.toastOnUi("从GitHub获取失败，显示本地日志")
+                    val mdText = String(requireContext().assets.open("updateLog.md").readBytes())
+                    showDialogFragment(TextDialog(getString(R.string.update_log), mdText, TextDialog.Mode.MD))
+                }.onFinally {
+                    waitDialog.dismiss()
+                }
+        }
     }
 
     /**

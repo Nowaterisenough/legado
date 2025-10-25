@@ -26,9 +26,9 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
 
     private suspend fun getLatestRelease(): List<AppReleaseInfo> {
         val lastReleaseUrl = if (checkVariant.isBeta()) {
-            "https://api.github.com/repos/Nowaterisenough/legado/releases/tags/beta"
+            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/tags/beta"
         } else {
-            "https://api.github.com/repos/Nowaterisenough/legado/releases/latest"
+            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/latest"
         }
         val res = okHttpClient.newCallResponse {
             url(lastReleaseUrl)
@@ -64,6 +64,30 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
                     )
                 }
                 ?: throw NoStackTraceException("已是最新版本")
+        }.timeout(10000)
+    }
+
+    /**
+     * 获取更新日志
+     */
+    fun getChangeLog(scope: CoroutineScope): Coroutine<String> {
+        return Coroutine.async(scope) {
+            val releaseUrl = "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/latest"
+            val res = okHttpClient.newCallResponse {
+                url(releaseUrl)
+            }
+            if (!res.isSuccessful) {
+                throw NoStackTraceException("获取更新日志失败(${res.code})")
+            }
+            val body = res.body?.text()
+            if (body.isNullOrBlank()) {
+                throw NoStackTraceException("获取更新日志失败")
+            }
+            GSON.fromJsonObject<GithubRelease>(body)
+                .getOrElse {
+                    throw NoStackTraceException("解析更新日志失败: " + it.localizedMessage)
+                }
+                .body
         }.timeout(10000)
     }
 }
