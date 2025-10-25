@@ -45,11 +45,17 @@ class RssSourceViewModel(application: Application) : BaseViewModel(application) 
     fun del(vararg rssSource: RssSource) {
         execute {
             SourceHelp.deleteRssSources(rssSource.toList())
+        }.onSuccess {
+            // 订阅源变化，触发自动备份
+            io.legado.app.help.storage.Backup.backupOnDataChange(context)
         }
     }
 
     fun update(vararg rssSource: RssSource) {
-        execute { appDb.rssSourceDao.update(*rssSource) }
+        execute { appDb.rssSourceDao.update(*rssSource) }.onSuccess {
+            // 订阅源变化，触发自动备份
+            io.legado.app.help.storage.Backup.backupOnDataChange(context)
+        }
     }
 
     fun upOrder() {

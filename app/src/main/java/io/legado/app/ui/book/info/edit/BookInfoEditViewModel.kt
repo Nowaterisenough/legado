@@ -29,6 +29,8 @@ class BookInfoEditViewModel(application: Application) : BaseViewModel(applicatio
             }
             appDb.bookDao.update(book)
         }.onSuccess {
+            // 书籍信息变化，触发自动备份
+            io.legado.app.help.storage.Backup.backupOnDataChange(context)
             success?.invoke()
         }.onError {
             if (it is SQLiteConstraintException) {
