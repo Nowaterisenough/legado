@@ -70,14 +70,23 @@ object Backup {
     }
 
     private fun getNowZipFileName(): String {
-        val backupDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            .format(Date(System.currentTimeMillis()))
-        val deviceName = AppConfig.webDavDeviceName
-        return if (deviceName?.isNotBlank() == true) {
-            "backup${backupDate}-${deviceName}.zip"
-        } else {
-            "backup${backupDate}.zip"
-        }
+        val timestamp = LocalConfig.lastDataChangeTime
+        val backupDate = SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault())
+            .format(Date(timestamp))
+        return "backup_${backupDate}.zip"
+    }
+
+    fun getTimestampFromFileName(fileName: String): Long {
+        val regex = Regex("backup_(\\d{12})\\.zip")
+        val matchResult = regex.find(fileName)
+        return matchResult?.groupValues?.get(1)?.let { timestamp ->
+            try {
+                SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault())
+                    .parse(timestamp)?.time ?: 0L
+            } catch (e: Exception) {
+                0L
+            }
+        } ?: 0L
     }
 
     private fun shouldBackup(): Boolean {
@@ -101,6 +110,28 @@ object Backup {
             }.onError {
                 AppLog.put("自动备份失败\n${it.localizedMessage}")
             }
+        }
+    }
+
+    /**
+     * 数据变化时自动备份到WebDAV
+     */
+    fun backupOnDataChange(context: Context) {
+        // 更新本地时间戳
+        LocalConfig.lastDataChangeTime = System.currentTimeMillis()
+
+        Coroutine.async {
+            mutex.withLock {
+                try {
+                    backup(context, AppConfig.backupPath)
+                    // 清理WebDAV上的旧备份文件，只保留最新的
+                    AppWebDav.deleteOldBackups()
+                } catch (e: Exception) {
+                    AppLog.put("数据变化自动备份失败\n${e.localizedMessage}", e)
+                }
+            }
+        }.onError {
+            AppLog.put("数据变化自动备份失败\n${it.localizedMessage}")
         }
     }
 
