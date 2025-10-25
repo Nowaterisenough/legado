@@ -161,7 +161,7 @@ object AppWebDav {
         return kotlin.runCatching {
             authorization?.let {
                 val backupFiles = WebDav(rootWebDavUrl, it).listFiles()
-                    .filter { it.displayName.matches(Regex("backup_\\d{12}\\.zip")) }
+                    .filter { it.displayName.matches(Regex("backup_[^_]+_\\d+\\.zip")) }
 
                 backupFiles.maxByOrNull { file ->
                     Backup.getTimestampFromFileName(file.displayName)
@@ -177,7 +177,7 @@ object AppWebDav {
         kotlin.runCatching {
             authorization?.let { auth ->
                 val backupFiles = WebDav(rootWebDavUrl, auth).listFiles()
-                    .filter { it.displayName.matches(Regex("backup_\\d{12}\\.zip")) }
+                    .filter { it.displayName.matches(Regex("backup_[^_]+_\\d+\\.zip")) }
                     .sortedByDescending { Backup.getTimestampFromFileName(it.displayName) }
 
                 // 保留最新的，删除其他所有旧备份

@@ -71,22 +71,14 @@ object Backup {
 
     private fun getNowZipFileName(): String {
         val timestamp = LocalConfig.lastDataChangeTime
-        val backupDate = SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault())
-            .format(Date(timestamp))
-        return "backup_${backupDate}.zip"
+        val deviceName = AppConfig.webDavDeviceName?.replace("[^a-zA-Z0-9_-]".toRegex(), "_") ?: "unknown"
+        return "backup_${deviceName}_${timestamp}.zip"
     }
 
     fun getTimestampFromFileName(fileName: String): Long {
-        val regex = Regex("backup_(\\d{12})\\.zip")
+        val regex = Regex("backup_[^_]+_(\\d+)\\.zip")
         val matchResult = regex.find(fileName)
-        return matchResult?.groupValues?.get(1)?.let { timestamp ->
-            try {
-                SimpleDateFormat("yyyyMMddHHmm", Locale.getDefault())
-                    .parse(timestamp)?.time ?: 0L
-            } catch (e: Exception) {
-                0L
-            }
-        } ?: 0L
+        return matchResult?.groupValues?.get(1)?.toLongOrNull() ?: 0L
     }
 
     private fun shouldBackup(): Boolean {
