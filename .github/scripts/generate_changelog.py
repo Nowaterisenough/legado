@@ -14,16 +14,16 @@ from typing import Dict, List, Tuple
 
 # Commit 类型配置
 COMMIT_TYPES = {
-    'feat': {'title': '✨ 新功能', 'order': 1},
-    'fix': {'title': '🐛 Bug修复', 'order': 2},
-    'perf': {'title': '⚡ 性能优化', 'order': 3},
-    'refactor': {'title': '♻️ 重构', 'order': 4},
-    'docs': {'title': '📝 文档', 'order': 5},
-    'style': {'title': '💄 代码格式', 'order': 6},
-    'test': {'title': '✅ 测试', 'order': 7},
-    'build': {'title': '📦️ 构建系统', 'order': 8},
-    'ci': {'title': '👷 CI配置', 'order': 9},
-    'chore': {'title': '🔧 其他', 'order': 10},
+    'feat': {'title': '新功能', 'order': 1},
+    'fix': {'title': 'Bug修复', 'order': 2},
+    'perf': {'title': '性能优化', 'order': 3},
+    'refactor': {'title': '重构', 'order': 4},
+    'docs': {'title': '文档', 'order': 5},
+    'style': {'title': '代码格式', 'order': 6},
+    'test': {'title': '测试', 'order': 7},
+    'build': {'title': '构建系统', 'order': 8},
+    'ci': {'title': 'CI配置', 'order': 9},
+    'chore': {'title': '其他', 'order': 10},
 }
 
 
