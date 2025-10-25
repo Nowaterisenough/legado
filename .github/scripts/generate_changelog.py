@@ -29,18 +29,7 @@ COMMIT_TYPES = {
 
 def run_command(cmd: str) -> str:
     """执行命令并返回输出"""
-    # 尝试使用系统默认编码
     try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            capture_output=True,
-            text=True,
-            encoding=locale.getpreferredencoding()
-        )
-        return result.stdout.strip()
-    except UnicodeDecodeError:
-        # 如果系统编码失败，尝试 utf-8
         result = subprocess.run(
             cmd,
             shell=True,
@@ -49,13 +38,24 @@ def run_command(cmd: str) -> str:
             encoding='utf-8',
             errors='ignore'
         )
-        return result.stdout.strip()
+        return result.stdout.strip() if result.stdout else ""
+    except Exception:
+        # 如果失败，返回空字符串
+        return ""
 
 
 def get_last_tag() -> str:
-    """获取上一个 tag"""
-    tag = run_command("git describe --tags --abbrev=0 2>/dev/null || echo ''")
-    return tag if tag else None
+    """获取上一个 tag (倒数第二个，因为最新的 tag 就是当前 release)"""
+    # 获取所有 tags，按版本号倒序排列，取第二个（跳过当前 tag）
+    tags = run_command("git tag --sort=-v:refname")
+    if not tags:
+        return None
+    tag_list = [t.strip() for t in tags.split('\n') if t.strip()]
+    # 如果只有一个或没有 tag，返回 None
+    if len(tag_list) < 2:
+        return None
+    # 返回倒数第二个 tag
+    return tag_list[1]
 
 
 def get_commits_since(since_ref: str = None) -> List[str]:
