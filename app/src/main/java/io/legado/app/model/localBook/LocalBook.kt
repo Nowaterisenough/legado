@@ -456,6 +456,67 @@ object LocalBook {
         }
     }
 
+    /**
+     * 保存书籍文件到指定目录的子文件夹
+     * @param inputStream 输入流
+     * @param fileName 文件名
+     * @param basePathUri 基础目录URI字符串
+     * @param subDir 子目录名称
+     */
+    @Throws(SecurityException::class)
+    fun saveBookFile(
+        inputStream: InputStream,
+        fileName: String,
+        basePathUri: String,
+        vararg subDir: String
+    ): Uri {
+        inputStream.use {
+            val baseUri = Uri.parse(basePathUri)
+            return if (baseUri.isContentScheme()) {
+                val baseDoc = DocumentFile.fromTreeUri(appCtx, baseUri)
+                    ?: throw SecurityException("无效的目录URI")
+                var targetDir = baseDoc
+                // 创建子目录
+                subDir.forEach { dirName ->
+                    targetDir = targetDir.findFile(dirName)
+                        ?: targetDir.createDirectory(dirName)
+                        ?: throw SecurityException("无法创建子目录: $dirName")
+                }
+                var doc = targetDir.findFile(fileName)
+                if (doc == null) {
+                    doc = targetDir.createFile(FileUtils.getMimeType(fileName), fileName)
+                        ?: throw SecurityException("无法创建文件\nPermission Denial")
+                }
+                // 使用 "wt" 模式覆盖写入，避免文件名冲突
+                appCtx.contentResolver.openOutputStream(doc.uri, "wt")!!.use { oStream ->
+                    it.copyTo(oStream)
+                }
+                doc.uri
+            } else {
+                try {
+                    val baseFile = File(baseUri.path!!)
+                    var targetDir = baseFile
+                    // 创建子目录
+                    subDir.forEach { dirName ->
+                        targetDir = targetDir.getFile(dirName)
+                        if (!targetDir.exists()) {
+                            targetDir.mkdirs()
+                        }
+                    }
+                    val file = targetDir.getFile(fileName)
+                    FileOutputStream(file).use { oStream ->
+                        it.copyTo(oStream)
+                    }
+                    Uri.fromFile(file)
+                } catch (e: FileNotFoundException) {
+                    throw SecurityException("保存文件失败\nPermission Denial\n$e").apply {
+                        addSuppressed(e)
+                    }
+                }
+            }
+        }
+    }
+
     fun isOnBookShelf(
         fileName: String
     ): Boolean {
@@ -479,8 +540,9 @@ object LocalBook {
         val webDavUrl = localBook.getRemoteUrl()
         if (webDavUrl.isNullOrBlank()) throw NoStackTraceException("Book file is not webDav File")
         try {
-            AppConfig.defaultBookTreeUri
-                ?: throw NoBooksDirException()
+            // 使用backupPath下的remoteBooks子目录
+            val backupPath = AppConfig.backupPath
+                ?: throw NoStackTraceException("没有设置备份路径，无法下载远程书籍")
             // 兼容旧版链接
             val webdav: WebDav = kotlin.runCatching {
                 WebDav.fromPath(webDavUrl)
@@ -494,7 +556,7 @@ object LocalBook {
             inputStream.use {
                 if (localBook.isArchive) {
                     // 压缩包
-                    val archiveUri = saveBookFile(it, localBook.archiveName)
+                    val archiveUri = saveBookFile(it, localBook.archiveName, backupPath, "remoteBooks")
                     val newBook = importArchiveFile(archiveUri, localBook.originName) { name ->
                         name.contains(localBook.originName)
                     }.first()
@@ -502,7 +564,7 @@ object LocalBook {
                     localBook.bookUrl = newBook.bookUrl
                 } else {
                     // txt epub pdf umd
-                    val fileUri = saveBookFile(it, localBook.originName)
+                    val fileUri = saveBookFile(it, localBook.originName, backupPath, "remoteBooks")
                     localBook.bookUrl = FileDoc.fromUri(fileUri, false).toString()
                     localBook.save()
                 }
