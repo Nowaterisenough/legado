@@ -94,7 +94,8 @@ class BooksAdapterGrid(context: Context, callBack: CallBack) :
             } else {
                 binding.rlLoading.inVisible()
                 if (AppConfig.showUnread) {
-                    binding.bvUnread.setBadgeCount(item.getUnreadChapterNum())
+                    val compact = AppConfig.bookshelfLayout >= 3  // 5列或6列时使用紧凑模式
+                    binding.bvUnread.setBadgeCount(item.getUnreadChapterNum(), compact)
                     binding.bvUnread.setHighlight(item.lastCheckCount > 0)
                 } else {
                     binding.bvUnread.invisible()
