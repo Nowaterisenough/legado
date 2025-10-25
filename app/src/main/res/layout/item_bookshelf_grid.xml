@@ -16,9 +16,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingLeft="8dp"
+        android:paddingLeft="2dp"
         android:paddingTop="8dp"
-        android:paddingRight="8dp"
+        android:paddingRight="2dp"
         android:scrollbars="none"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -31,7 +31,10 @@
                 android:id="@+id/iv_cover"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="8dp"
+                android:layout_marginLeft="3dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginRight="3dp"
+                android:layout_marginBottom="4dp"
                 android:scaleType="centerCrop"
                 android:scrollbars="none"
                 android:src="@drawable/image_cover_default"
@@ -44,11 +47,14 @@
                 android:id="@+id/bv_unread"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right"
+                android:layout_marginTop="4dp"
+                android:layout_marginRight="4dp"
+                android:elevation="2dp"
                 android:includeFontPadding="false"
                 android:scrollbars="none"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintRight_toRightOf="@id/iv_cover"
+                app:layout_constraintTop_toTopOf="@id/iv_cover"
+                app:radius="1dp"
                 tools:ignore="RtlHardcoded" />
 
             <io.legado.app.ui.widget.anima.RotateLoading
