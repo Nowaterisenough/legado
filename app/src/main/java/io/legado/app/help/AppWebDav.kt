@@ -183,7 +183,8 @@ object AppWebDav {
                 // 保留最新的，删除其他所有旧备份
                 backupFiles.drop(1).forEach { file ->
                     try {
-                        WebDav(file.url, auth).delete()
+                        val fileUrl = "$rootWebDavUrl${file.displayName}"
+                        WebDav(fileUrl, auth).delete()
                         AppLog.put("删除旧备份: ${file.displayName}")
                     } catch (e: Exception) {
                         AppLog.put("删除旧备份失败: ${file.displayName}\n${e.localizedMessage}")
