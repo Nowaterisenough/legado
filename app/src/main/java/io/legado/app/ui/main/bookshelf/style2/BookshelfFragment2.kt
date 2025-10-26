@@ -82,8 +82,11 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
         binding.rvBookshelf.setEdgeEffectColor(primaryColor)
         binding.refreshLayout.setColorSchemeColors(accentColor)
         binding.refreshLayout.setOnRefreshListener {
-            binding.refreshLayout.isRefreshing = false
-            activityViewModel.upToc(books)
+            // 先检查并恢复WebDAV备份，然后再刷新书籍
+            activityViewModel.checkAndRestoreWebDavBackup {
+                binding.refreshLayout.isRefreshing = false
+                activityViewModel.upToc(books)
+            }
         }
         if (bookshelfLayout == 0) {
             binding.rvBookshelf.layoutManager = LinearLayoutManager(context)

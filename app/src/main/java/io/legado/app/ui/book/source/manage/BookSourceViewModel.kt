@@ -51,11 +51,17 @@ class BookSourceViewModel(application: Application) : BaseViewModel(application)
     fun del(sources: List<BookSourcePart>) {
         execute {
             SourceHelp.deleteBookSourceParts(sources)
+        }.onSuccess {
+            // 书源变化，触发自动备份
+            io.legado.app.help.storage.Backup.backupOnDataChange(context)
         }
     }
 
     fun update(vararg bookSource: BookSource) {
-        execute { appDb.bookSourceDao.update(*bookSource) }
+        execute { appDb.bookSourceDao.update(*bookSource) }.onSuccess {
+            // 书源变化，触发自动备份
+            io.legado.app.help.storage.Backup.backupOnDataChange(context)
+        }
     }
 
     fun upOrder(items: List<BookSourcePart>) {

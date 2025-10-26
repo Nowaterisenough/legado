@@ -155,6 +155,55 @@ object AppWebDav {
     }
 
     /**
+     * 获取 WebDAV 上最新的备份（基于文件名中的时间戳）
+     */
+    suspend fun getLatestBackupByTimestamp(): WebDavFile? {
+        return kotlin.runCatching {
+            authorization?.let {
+                val backupFiles = WebDav(rootWebDavUrl, it).listFiles()
+                    .filter { it.displayName.matches(Regex("backup_[^_]+_\\d+\\.zip")) }
+
+                backupFiles.maxByOrNull { file ->
+                    Backup.getTimestampFromFileName(file.displayName)
+                }
+            }
+        }.getOrNull()
+    }
+
+    /**
+     * 删除 WebDAV 上的旧备份文件，只保留最新的
+     */
+    suspend fun deleteOldBackups() {
+        kotlin.runCatching {
+            authorization?.let { auth ->
+                val backupFiles = WebDav(rootWebDavUrl, auth).listFiles()
+                    .filter { it.displayName.matches(Regex("backup_[^_]+_\\d+\\.zip")) }
+                    .sortedByDescending { Backup.getTimestampFromFileName(it.displayName) }
+
+                // 获取最新备份的时间戳并更新到本地
+                backupFiles.firstOrNull()?.let { latestBackup ->
+                    val latestTimestamp = Backup.getTimestampFromFileName(latestBackup.displayName)
+                    io.legado.app.help.config.LocalConfig.lastDataChangeTime = latestTimestamp
+                    AppLog.put("更新本地时间戳为最新备份: ${latestBackup.displayName}")
+                }
+
+                // 保留最新的，删除其他所有旧备份
+                backupFiles.drop(1).forEach { file ->
+                    try {
+                        val fileUrl = "$rootWebDavUrl${file.displayName}"
+                        WebDav(fileUrl, auth).delete()
+                        AppLog.put("删除旧备份: ${file.displayName}")
+                    } catch (e: Exception) {
+                        AppLog.put("删除旧备份失败: ${file.displayName}\n${e.localizedMessage}")
+                    }
+                }
+            }
+        }.onFailure {
+            AppLog.put("清理旧备份失败\n${it.localizedMessage}")
+        }
+    }
+
+    /**
      * webDav备份
      * @param fileName 备份文件名
      */

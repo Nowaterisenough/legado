@@ -370,6 +370,8 @@ data class Book(
         } else {
             appDb.bookDao.insert(this)
         }
+        // 触发自动备份
+        triggerAutoBackup()
     }
 
     fun delete() {
@@ -377,6 +379,14 @@ data class Book(
             ReadBook.book = null
         }
         appDb.bookDao.delete(this)
+        // 触发自动备份
+        triggerAutoBackup()
+    }
+
+    private fun triggerAutoBackup() {
+        io.legado.app.help.coroutine.Coroutine.async {
+            io.legado.app.help.storage.Backup.backupOnDataChange(splitties.init.appCtx)
+        }
     }
 
     @Suppress("ConstPropertyName")

@@ -101,6 +101,36 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+    /**
+     * 下拉刷新时检查并恢复WebDAV备份
+     */
+    fun checkAndRestoreWebDavBackup(onComplete: () -> Unit) {
+        execute {
+            try {
+                val latestRemoteBackup = AppWebDav.getLatestBackupByTimestamp()
+                if (latestRemoteBackup != null) {
+                    val remoteTimestamp = io.legado.app.help.storage.Backup.getTimestampFromFileName(
+                        latestRemoteBackup.displayName
+                    )
+                    val localTimestamp = io.legado.app.help.config.LocalConfig.lastDataChangeTime
+
+                    if (remoteTimestamp > localTimestamp) {
+                        // 远端更新，恢复远端备份
+                        AppLog.put("发现更新的远端备份，开始恢复: ${latestRemoteBackup.displayName}")
+                        AppWebDav.restoreWebDav(latestRemoteBackup.displayName)
+                        // 更新本地时间戳为远端时间戳
+                        io.legado.app.help.config.LocalConfig.lastDataChangeTime = remoteTimestamp
+                        AppLog.put("WebDAV备份恢复完成，已更新本地时间戳")
+                    }
+                }
+            } catch (e: Exception) {
+                AppLog.put("检查WebDAV备份失败\n${e.localizedMessage}", e)
+            } finally {
+                onComplete()
+            }
+        }
+    }
+
     @Synchronized
     private fun addToWaitUp(books: List<Book>) {
         books.forEach { book ->
