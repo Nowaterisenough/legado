@@ -35,6 +35,12 @@ by appCtx.getSharedPreferences("local", Context.MODE_PRIVATE) {
             putLong("lastBackup", value)
         }
 
+    var lastDataChangeTime: Long
+        get() = getLong("lastDataChangeTime", 0)
+        set(value) {
+            putLong("lastDataChangeTime", value)
+        }
+
     var privacyPolicyOk: Boolean
         get() = getBoolean("privacyPolicyOk")
         set(value) {
