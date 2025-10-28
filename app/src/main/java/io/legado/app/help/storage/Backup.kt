@@ -70,15 +70,26 @@ object Backup {
     }
 
     private fun getNowZipFileName(): String {
-        val timestamp = System.currentTimeMillis()
+        val dateFormat = SimpleDateFormat("yyyy_MM_dd_HH_mm", Locale.getDefault())
+        val timestamp = dateFormat.format(Date())
         val deviceName = AppConfig.webDavDeviceName?.replace("[^a-zA-Z0-9_-]".toRegex(), "_") ?: "unknown"
         return "backup_${deviceName}_${timestamp}.zip"
     }
 
     fun getTimestampFromFileName(fileName: String): Long {
-        val regex = Regex("backup_[^_]+_(\\d+)\\.zip")
-        val matchResult = regex.find(fileName)
-        return matchResult?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+        // 新格式：backup_deviceName_2025_10_25_20_59.zip
+        val newFormatRegex = Regex("backup_[^_]+_(\\d{4})_(\\d{2})_(\\d{2})_(\\d{2})_(\\d{2})\\.zip")
+        val newFormatMatch = newFormatRegex.find(fileName)
+        if (newFormatMatch != null) {
+            val dateFormat = SimpleDateFormat("yyyy_MM_dd_HH_mm", Locale.getDefault())
+            val dateStr = "${newFormatMatch.groupValues[1]}_${newFormatMatch.groupValues[2]}_${newFormatMatch.groupValues[3]}_${newFormatMatch.groupValues[4]}_${newFormatMatch.groupValues[5]}"
+            return dateFormat.parse(dateStr)?.time ?: 0L
+        }
+
+        // 旧格式：backup_deviceName_1729875540000.zip
+        val oldFormatRegex = Regex("backup_[^_]+_(\\d{13})\\.zip")
+        val oldFormatMatch = oldFormatRegex.find(fileName)
+        return oldFormatMatch?.groupValues?.get(1)?.toLongOrNull() ?: 0L
     }
 
     private fun shouldBackup(): Boolean {
