@@ -32,6 +32,7 @@ import io.legado.app.help.book.upType
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.config.ThemeConfig
+import io.legado.app.model.ReadBook
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.utils.ACache
 import io.legado.app.utils.FileUtils
@@ -98,6 +99,9 @@ object Restore {
 
     private suspend fun restore(path: String) {
         val aes = BackupAES()
+        // 获取恢复前的本地书籍列表，用于后续删除不在备份中的书籍
+        val localBooksBeforeRestore = appDb.bookDao.all.map { it.bookUrl }.toSet()
+
         fileToListT<Book>(path, "bookshelf.json")?.let {
             it.forEach { book ->
                 book.upType()
@@ -108,10 +112,13 @@ object Restore {
                 }
             val newBooks = arrayListOf<Book>()
             val ignoreLocalBook = BackupConfig.ignoreLocalBook
+            val restoredBookUrls = mutableSetOf<String>()
+
             it.forEach { book ->
                 if (ignoreLocalBook && book.isLocal) {
                     return@forEach
                 }
+                restoredBookUrls.add(book.bookUrl)
                 if (appDb.bookDao.has(book.bookUrl)) {
                     try {
                         appDb.bookDao.update(book)
@@ -123,6 +130,21 @@ object Restore {
                 }
             }
             appDb.bookDao.insert(*newBooks.toTypedArray())
+
+            // 删除本地有但备份中没有的书籍（覆盖模式）
+            val booksToDelete = localBooksBeforeRestore - restoredBookUrls
+            if (booksToDelete.isNotEmpty()) {
+                LogUtils.d(TAG, "删除本地有但备份中没有的书籍，数量: ${booksToDelete.size}")
+                booksToDelete.forEach { bookUrl ->
+                    appDb.bookDao.getBook(bookUrl)?.let { book ->
+                        // 直接删除，不触发自动备份
+                        if (ReadBook.book?.bookUrl == bookUrl) {
+                            ReadBook.book = null
+                        }
+                        appDb.bookDao.delete(book)
+                    }
+                }
+            }
         }
         fileToListT<Bookmark>(path, "bookmark.json")?.let {
             appDb.bookmarkDao.insert(*it.toTypedArray())
