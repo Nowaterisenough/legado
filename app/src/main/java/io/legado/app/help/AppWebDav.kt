@@ -162,7 +162,7 @@ object AppWebDav {
         return kotlin.runCatching {
             authorization?.let {
                 val backupFiles = WebDav(rootWebDavUrl, it).listFiles()
-                    .filter { it.displayName.matches(Regex("backup_[^_]+_(\\d{13}|\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2})\\.zip")) }
+                    .filter { it.displayName.matches(Regex("backup_[^_]+_(\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2})\\.zip")) }
 
                 backupFiles.maxByOrNull { file ->
                     Backup.getTimestampFromFileName(file.displayName)
@@ -178,7 +178,7 @@ object AppWebDav {
         kotlin.runCatching {
             authorization?.let { auth ->
                 val backupFiles = WebDav(rootWebDavUrl, auth).listFiles()
-                    .filter { it.displayName.matches(Regex("backup_[^_]+_(\\d{13}|\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2})\\.zip")) }
+                    .filter { it.displayName.matches(Regex("backup_[^_]+_(\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2})\\.zip")) }
                     .sortedByDescending { Backup.getTimestampFromFileName(it.displayName) }
 
                 // 获取最新备份的时间戳并更新到本地

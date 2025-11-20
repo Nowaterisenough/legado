@@ -90,7 +90,7 @@ object Backup {
     }
 
     fun getTimestampFromFileName(fileName: String): Long {
-        // 新格式：backup_deviceName_2025_10_25_20_59.zip
+        // 格式：backup_deviceName_2025_10_25_20_59.zip
         val newFormatRegex = Regex("backup_[^_]+_(\\d{4})_(\\d{2})_(\\d{2})_(\\d{2})_(\\d{2})\\.zip")
         val newFormatMatch = newFormatRegex.find(fileName)
         if (newFormatMatch != null) {
@@ -98,11 +98,7 @@ object Backup {
             val dateStr = "${newFormatMatch.groupValues[1]}_${newFormatMatch.groupValues[2]}_${newFormatMatch.groupValues[3]}_${newFormatMatch.groupValues[4]}_${newFormatMatch.groupValues[5]}"
             return dateFormat.parse(dateStr)?.time ?: 0L
         }
-
-        // 旧格式：backup_deviceName_1729875540000.zip
-        val oldFormatRegex = Regex("backup_[^_]+_(\\d{13})\\.zip")
-        val oldFormatMatch = oldFormatRegex.find(fileName)
-        return oldFormatMatch?.groupValues?.get(1)?.toLongOrNull() ?: 0L
+        return 0L
     }
 
     private fun shouldBackup(): Boolean {
