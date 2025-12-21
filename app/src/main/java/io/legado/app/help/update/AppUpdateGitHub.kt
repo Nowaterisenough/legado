@@ -9,6 +9,7 @@ import io.legado.app.help.http.newCallResponse
 import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.http.text
 import io.legado.app.utils.GSON
+import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.fromJsonObject
 import kotlinx.coroutines.CoroutineScope
 
@@ -26,7 +27,8 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
 
     private suspend fun getLatestRelease(): List<AppReleaseInfo> {
         val lastReleaseUrl = if (checkVariant.isBeta()) {
-            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/tags/beta"
+            // 获取所有 releases 列表，然后筛选 prerelease 版本
+            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases?per_page=5"
         } else {
             "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/latest"
         }
@@ -40,12 +42,25 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
         if (body.isNullOrBlank()) {
             throw NoStackTraceException("获取新版本出错")
         }
-        return GSON.fromJsonObject<GithubRelease>(body)
-            .getOrElse {
-                throw NoStackTraceException("获取新版本出错 " + it.localizedMessage)
-            }
-            .gitReleaseToAppReleaseInfo()
-            .sortedByDescending { it.createdAt }
+        return if (checkVariant.isBeta()) {
+            // 解析 releases 列表，筛选最新的 prerelease 版本
+            GSON.fromJsonArray<GithubRelease>(body)
+                .getOrElse {
+                    throw NoStackTraceException("获取新版本出错 " + it.localizedMessage)
+                }
+                .filter { it.isPreRelease }
+                .firstOrNull()
+                ?.gitReleaseToAppReleaseInfo()
+                ?.sortedByDescending { it.createdAt }
+                ?: throw NoStackTraceException("未找到测试版本")
+        } else {
+            GSON.fromJsonObject<GithubRelease>(body)
+                .getOrElse {
+                    throw NoStackTraceException("获取新版本出错 " + it.localizedMessage)
+                }
+                .gitReleaseToAppReleaseInfo()
+                .sortedByDescending { it.createdAt }
+        }
     }
 
     override fun check(
