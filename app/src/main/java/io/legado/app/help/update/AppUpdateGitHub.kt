@@ -9,7 +9,6 @@ import io.legado.app.help.http.newCallResponse
 import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.http.text
 import io.legado.app.utils.GSON
-import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.fromJsonObject
 import kotlinx.coroutines.CoroutineScope
 
@@ -22,16 +21,14 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
             "official_version" -> AppVariant.OFFICIAL
             "beta_release_version" -> AppVariant.BETA_RELEASE
             "beta_releaseA_version" -> AppVariant.BETA_RELEASEA
-            else -> AppConst.appInfo.appVariant
+            // 默认使用正式版，避免 DEBUG 版本或 UNKNOWN 导致检查失败
+            else -> AppVariant.OFFICIAL
         }
 
     private suspend fun getLatestRelease(): List<AppReleaseInfo> {
-        val lastReleaseUrl = if (checkVariant.isBeta()) {
-            // 获取所有 releases 列表，然后筛选 prerelease 版本
-            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases?per_page=5"
-        } else {
-            "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/latest"
-        }
+        // 始终使用 /releases/latest 获取最新正式版本
+        // 因为 fork 仓库通常没有 beta tag，使用 /releases/tags/beta 会返回 404
+        val lastReleaseUrl = "https://api.github.com/repos/${io.legado.app.BuildConfig.GITHUB_REPO}/releases/latest"
         val res = okHttpClient.newCallResponse {
             url(lastReleaseUrl)
         }
@@ -42,25 +39,12 @@ object AppUpdateGitHub : AppUpdate.AppUpdateInterface {
         if (body.isNullOrBlank()) {
             throw NoStackTraceException("获取新版本出错")
         }
-        return if (checkVariant.isBeta()) {
-            // 解析 releases 列表，筛选最新的 prerelease 版本
-            GSON.fromJsonArray<GithubRelease>(body)
-                .getOrElse {
-                    throw NoStackTraceException("获取新版本出错 " + it.localizedMessage)
-                }
-                .filter { it.isPreRelease }
-                .firstOrNull()
-                ?.gitReleaseToAppReleaseInfo()
-                ?.sortedByDescending { it.createdAt }
-                ?: throw NoStackTraceException("未找到测试版本")
-        } else {
-            GSON.fromJsonObject<GithubRelease>(body)
-                .getOrElse {
-                    throw NoStackTraceException("获取新版本出错 " + it.localizedMessage)
-                }
-                .gitReleaseToAppReleaseInfo()
-                .sortedByDescending { it.createdAt }
-        }
+        return GSON.fromJsonObject<GithubRelease>(body)
+            .getOrElse {
+                throw NoStackTraceException("获取新版本出错 " + it.localizedMessage)
+            }
+            .gitReleaseToAppReleaseInfo()
+            .sortedByDescending { it.createdAt }
     }
 
     override fun check(
