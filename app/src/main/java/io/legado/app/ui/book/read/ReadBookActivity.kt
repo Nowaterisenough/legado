@@ -1584,7 +1584,14 @@ class ReadBookActivity : BaseReadBookActivity(),
             okButton {
                 ReadBook.setProgress(progress)
             }
-            noButton()
+            noButton {
+                // 用户选择不同步云端进度，将本地进度上传到云端，避免频繁提醒
+                ReadBook.book?.let { book ->
+                    lifecycleScope.launch {
+                        AppWebDav.uploadBookProgress(book)
+                    }
+                }
+            }
         }
     }
 

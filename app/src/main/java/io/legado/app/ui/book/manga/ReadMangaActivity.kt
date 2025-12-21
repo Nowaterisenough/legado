@@ -31,6 +31,7 @@ import io.legado.app.data.entities.BookProgress
 import io.legado.app.data.entities.BookSource
 import io.legado.app.databinding.ActivityMangaBinding
 import io.legado.app.databinding.ViewLoadMoreBinding
+import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.isImage
 import io.legado.app.help.book.removeType
 import io.legado.app.help.config.AppConfig
@@ -408,7 +409,14 @@ class ReadMangaActivity : VMBaseActivity<ActivityMangaBinding, ReadMangaViewMode
             okButton {
                 ReadManga.setProgress(progress)
             }
-            noButton()
+            noButton {
+                // 用户选择不同步云端进度，将本地进度上传到云端，避免频繁提醒
+                ReadManga.book?.let { book ->
+                    lifecycleScope.launch {
+                        AppWebDav.uploadBookProgress(book)
+                    }
+                }
+            }
         }
     }
 
