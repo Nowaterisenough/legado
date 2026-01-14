@@ -102,7 +102,9 @@ open class WebDav(
             chain.proceed(request)
         }
         okHttpClient.newBuilder().run {
-            callTimeout(0, TimeUnit.SECONDS)
+            connectTimeout(3, TimeUnit.SECONDS)
+            readTimeout(5, TimeUnit.SECONDS)
+            writeTimeout(5, TimeUnit.SECONDS)
             interceptors().add(0, authInterceptor)
             addNetworkInterceptor(authInterceptor)
             build()
