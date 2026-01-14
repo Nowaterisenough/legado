@@ -106,10 +106,11 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
     }
 
     /**
-     * 下拉刷新时检查并恢复WebDAV备份
-     * 添加5秒超时保护，避免WebDAV连接问题导致刷新卡住
+     * 下拉刷新时检查并恢复WebDAV备份（异步执行，不阻塞刷新）
+     * 添加5秒超时保护，避免WebDAV连接问题
      */
-    fun checkAndRestoreWebDavBackup(onComplete: () -> Unit) {
+    fun checkAndRestoreWebDavBackup() {
+        if (!AppWebDav.isOk) return
         execute {
             try {
                 val result = withTimeoutOrNull(5_000L) {
@@ -138,8 +139,6 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
             } catch (e: Exception) {
                 AppLog.put("检查WebDAV备份失败\n${e.localizedMessage}", e)
                 context.toastOnUi("WebDAV连接失败")
-            } finally {
-                onComplete()
             }
         }
     }

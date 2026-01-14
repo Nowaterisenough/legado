@@ -97,11 +97,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         upFastScrollerBar()
         binding.refreshLayout.setColorSchemeColors(accentColor)
         binding.refreshLayout.setOnRefreshListener {
-            // 先检查并恢复WebDAV备份，然后再刷新书籍
-            activityViewModel.checkAndRestoreWebDavBackup {
-                binding.refreshLayout.isRefreshing = false
-                activityViewModel.upToc(booksAdapter.getItems())
-            }
+            binding.refreshLayout.isRefreshing = false
+            activityViewModel.upToc(booksAdapter.getItems())
+            // 异步检查WebDAV备份，不阻塞刷新
+            activityViewModel.checkAndRestoreWebDavBackup()
         }
         if (bookshelfLayout == 0) {
             binding.rvBookshelf.layoutManager = LinearLayoutManager(context)
