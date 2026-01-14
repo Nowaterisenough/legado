@@ -379,6 +379,7 @@
     <string name="page_anim_simulation">Mô phỏng</string>
     <string name="page_anim_scroll">Cuộn</string>
     <string name="page_anim_none">Không có</string>
+    <string name="disable_manga_page_anim">Tắt hiệu ứng lật trang</string>
     <string name="up_change_source_last_chapter_t">Cập nhật chương mới nhất sau khi đổi nguồn trong nền</string>
     <string name="up_change_source_last_chapter_s">Nếu được kích hoạt, cập nhật sẽ bắt đầu sau 1 phút khi phần mềm chạy</string>
     <string name="behavior_main_t">Tự động ẩn thanh công cụ</string>
@@ -1218,4 +1219,5 @@
     <string name="sure_cache_book">是否确认开始缓存？</string>
     <string name="auto_check_new_backup_t">自动检查新备份</string>
     <string name="auto_check_new_backup_s">打开软件时检查是否有新备份，有新备份时提示是否更新</string>
+    <string name="sys_image_picker">系统图片选择器</string>
 </resources>

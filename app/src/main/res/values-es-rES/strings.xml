@@ -380,6 +380,7 @@
     <string name="page_anim_simulation">Simulación</string>
     <string name="page_anim_scroll">Desplazado</string>
     <string name="page_anim_none">Ninguno</string>
+    <string name="disable_manga_page_anim">Desactivar animación de volteo</string>
     <string name="up_change_source_last_chapter_t">Actualiza el último capítulo después del cambio de fuente en segundo plano</string>
     <string name="up_change_source_last_chapter_s">si está habilitado, la actualización comenzará 1 minuto después de que se abra la aplicación</string>
     <string name="behavior_main_t">Ocultar automáticamente la barra de herramientas</string>
@@ -1224,4 +1225,5 @@
     <string name="sure_cache_book">是否确认开始缓存？</string>
     <string name="auto_check_new_backup_t">自动检查新备份</string>
     <string name="auto_check_new_backup_s">打开软件时检查是否有新备份，有新备份时提示是否更新</string>
+    <string name="sys_image_picker">系统图片选择器</string>
 </resources>
