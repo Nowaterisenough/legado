@@ -4,8 +4,8 @@ plugins {
 }
 
 android {
-    compileSdk = rootProject.ext.compile_sdk_version
-    namespace 'me.ag2s'
+    compileSdk = compile_sdk_version
+    namespace = 'me.ag2s'
     kotlin {
         jvmToolchain {
             languageVersion.set(JavaLanguageVersion.of(21))
@@ -24,7 +24,7 @@ android {
         targetCompatibility JavaVersion.VERSION_21
     }
     lint {
-        checkDependencies true
+        checkDependencies = true
     }
 }
 
