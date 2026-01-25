@@ -86,10 +86,17 @@ object Backup {
     }
 
     private fun getNowZipFileName(): String {
+        return getZipFileName(System.currentTimeMillis())
+    }
+
+    /**
+     * 根据指定时间戳生成备份文件名
+     */
+    private fun getZipFileName(timestamp: Long): String {
         val dateFormat = SimpleDateFormat("yyyy_MM_dd_HH_mm", Locale.getDefault())
-        val timestamp = dateFormat.format(Date())
+        val timeStr = dateFormat.format(Date(timestamp))
         val deviceName = AppConfig.webDavDeviceName?.replace("[^a-zA-Z0-9_-]".toRegex(), "_") ?: "unknown"
-        return "backup_${deviceName}_${timestamp}.zip"
+        return "backup_${deviceName}_${timeStr}.zip"
     }
 
     fun getTimestampFromFileName(fileName: String): Long {
@@ -129,18 +136,28 @@ object Backup {
     }
 
     /**
-     * 数据变化时自动备份到WebDAV
+     * 数据变化时自动备份到WebDAV（时间戳一致性保证）
      */
     fun backupOnDataChange(context: Context) {
-        // 更新本地时间戳
-        LocalConfig.lastDataChangeTime = System.currentTimeMillis()
+        if (!AppWebDav.isOk) return
 
         Coroutine.async {
             mutex.withLock {
                 try {
-                    backup(context, AppConfig.backupPath)
-                    // 清理WebDAV上的旧备份文件，只保留最新的
+                    // 在实际备份时生成时间戳，保证一致性
+                    val timestamp = System.currentTimeMillis()
+                    val zipFileName = getZipFileName(timestamp)
+
+                    // 执行备份
+                    backup(context, AppConfig.backupPath, zipFileName)
+
+                    // 备份成功后更新本地时间戳（使用同一时间戳）
+                    LocalConfig.lastDataChangeTime = timestamp
+
+                    // 清理WebDAV上的旧备份文件
                     AppWebDav.deleteOldBackups()
+
+                    AppLog.put("数据变化自动备份成功: $zipFileName")
                 } catch (e: Exception) {
                     AppLog.put("数据变化自动备份失败\n${e.localizedMessage}", e)
                 }
@@ -158,8 +175,9 @@ object Backup {
         }
     }
 
-    private suspend fun backup(context: Context, path: String?) {
-        LogUtils.d(TAG, "开始备份 path:$path")
+    private suspend fun backup(context: Context, path: String?, customZipFileName: String? = null) {
+        val zipFileName = customZipFileName ?: getNowZipFileName()
+        LogUtils.d(TAG, "开始备份 path:$path fileName:$zipFileName")
         LocalConfig.lastBackup = System.currentTimeMillis()
         val aes = BackupAES()
         FileUtils.delete(backupPath)
@@ -231,7 +249,6 @@ object Backup {
             edit.commit()
         }
         currentCoroutineContext().ensureActive()
-        val zipFileName = getNowZipFileName()
         val paths = arrayListOf(*backupFileNames)
         for (i in 0 until paths.size) {
             paths[i] = backupPath + File.separator + paths[i]

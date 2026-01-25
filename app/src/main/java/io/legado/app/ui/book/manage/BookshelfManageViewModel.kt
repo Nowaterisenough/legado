@@ -14,6 +14,7 @@ import io.legado.app.help.book.isLocal
 import io.legado.app.help.book.removeType
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.help.storage.Backup
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.FileUtils
@@ -49,6 +50,9 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
     fun updateBook(vararg book: Book) {
         execute {
             appDb.bookDao.update(*book)
+        }.onSuccess {
+            // 书籍信息变化（包括分组），触发自动备份
+            Backup.backupOnDataChange(context)
         }
     }
 
@@ -60,6 +64,9 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
                     LocalBook.deleteBook(it, deleteOriginal)
                 }
             }
+        }.onSuccess {
+            // 书籍删除，触发自动备份
+            Backup.backupOnDataChange(context)
         }
     }
 

@@ -99,6 +99,8 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         binding.refreshLayout.setOnRefreshListener {
             binding.refreshLayout.isRefreshing = false
             activityViewModel.upToc(booksAdapter.getItems())
+            // 检查WebDAV远端是否有更新
+            activityViewModel.checkAndRestoreFromWebDav()
         }
         if (bookshelfLayout == 0) {
             binding.rvBookshelf.layoutManager = LinearLayoutManager(context)

@@ -9,6 +9,7 @@ import io.legado.app.data.entities.RssSource
 import io.legado.app.help.AppCacheManager
 import io.legado.app.help.config.SourceConfig
 import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.help.storage.Backup
 import io.legado.app.model.AudioPlay
 import io.legado.app.model.ReadBook
 import io.legado.app.model.ReadManga
@@ -137,6 +138,8 @@ object SourceHelp {
         }
         bookSourcesGroup[false]?.let {
             appDb.bookSourceDao.insert(*it.toTypedArray())
+            // 书源导入，触发自动备份
+            Backup.backupOnDataChange(appCtx)
         }
         Coroutine.async {
             adjustSortNumber()

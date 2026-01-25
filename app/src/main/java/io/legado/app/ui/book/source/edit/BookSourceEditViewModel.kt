@@ -14,6 +14,7 @@ import io.legado.app.help.http.newCallStrResponse
 import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.source.SourceHelp
 import io.legado.app.help.source.clearExploreKindsCache
+import io.legado.app.help.storage.Backup
 import io.legado.app.help.storage.ImportOldData
 import io.legado.app.model.SharedJsScope
 import io.legado.app.utils.GSON
@@ -75,6 +76,8 @@ class BookSourceEditViewModel(application: Application) : BaseViewModel(applicat
             bookSource = source
             source
         }.onSuccess {
+            // 书源保存，触发自动备份
+            Backup.backupOnDataChange(context)
             success?.invoke(it)
         }.onError {
             context.toastOnUi(it.localizedMessage)

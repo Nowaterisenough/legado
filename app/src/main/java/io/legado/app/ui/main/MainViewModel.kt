@@ -14,6 +14,8 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookSource
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.DefaultData
+import io.legado.app.help.config.LocalConfig
+import io.legado.app.help.storage.Backup
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.isLocal
@@ -25,8 +27,10 @@ import io.legado.app.model.CacheBook
 import io.legado.app.model.ReadBook
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.service.CacheBookService
+import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.onEachParallel
 import io.legado.app.utils.postEvent
+import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
@@ -39,6 +43,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -237,6 +242,55 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
     fun restoreWebDav(name: String) {
         execute {
             AppWebDav.restoreWebDav(name)
+        }
+    }
+
+    /**
+     * 下拉刷新时检查远端WebDAV备份
+     * 如果远端更新则恢复到本地（单向同步）
+     */
+    fun checkAndRestoreFromWebDav() {
+        if (!AppWebDav.isOk) return
+        if (!NetworkUtils.isAvailable()) return
+
+        execute {
+            try {
+                val result = withTimeoutOrNull(8_000L) {
+                    val remoteBackup = AppWebDav.getLatestBackupByTimestamp()
+                    if (remoteBackup == null) {
+                        AppLog.put("WebDAV上没有找到备份文件")
+                        return@withTimeoutOrNull true
+                    }
+
+                    val remoteTimestamp = Backup.getTimestampFromFileName(remoteBackup.displayName)
+                    val localTimestamp = LocalConfig.lastDataChangeTime
+
+                    AppLog.put("检查WebDAV备份: 远端=${remoteBackup.displayName}, 远端时间戳=$remoteTimestamp, 本地时间戳=$localTimestamp")
+
+                    if (remoteTimestamp > localTimestamp) {
+                        AppLog.put("远端备份更新，开始恢复: ${remoteBackup.displayName}")
+                        context.toastOnUi("正在从WebDAV恢复数据...")
+
+                        AppWebDav.restoreWebDav(remoteBackup.displayName)
+
+                        // 恢复成功后更新本地时间戳
+                        LocalConfig.lastDataChangeTime = remoteTimestamp
+
+                        AppLog.put("WebDAV备份恢复完成")
+                        context.toastOnUi("数据恢复完成")
+                    } else {
+                        AppLog.put("本地数据已是最新，无需恢复")
+                    }
+                    true
+                }
+
+                if (result == null) {
+                    AppLog.put("检查WebDAV备份超时")
+                    context.toastOnUi("WebDAV连接超时")
+                }
+            } catch (e: Exception) {
+                AppLog.put("检查WebDAV备份失败\n${e.localizedMessage}", e)
+            }
         }
     }
 

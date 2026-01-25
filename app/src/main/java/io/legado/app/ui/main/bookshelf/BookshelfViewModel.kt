@@ -12,6 +12,7 @@ import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.help.storage.Backup
 import io.legado.app.help.http.decompressed
 import io.legado.app.help.http.newCallResponseBody
 import io.legado.app.help.http.okHttpClient
@@ -89,6 +90,8 @@ class BookshelfViewModel(application: Application) : BaseViewModel(application) 
         }.onSuccess {
             if (successCount > 0) {
                 context.toastOnUi(R.string.success)
+                // 书籍新增成功，触发自动备份
+                Backup.backupOnDataChange(context)
             } else {
                 context.toastOnUi("添加网址失败")
             }
@@ -182,6 +185,8 @@ class BookshelfViewModel(application: Application) : BaseViewModel(application) 
             it.printOnDebug()
         }.onFinally {
             context.toastOnUi(R.string.success)
+            // 书籍导入完成，触发自动备份
+            Backup.backupOnDataChange(context)
         }
     }
 
