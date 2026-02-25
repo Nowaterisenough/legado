@@ -15,7 +15,6 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.DefaultData
 import io.legado.app.help.config.LocalConfig
-import io.legado.app.help.storage.Backup
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.isLocal
@@ -256,28 +255,29 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
         execute {
             try {
                 val result = withTimeoutOrNull(8_000L) {
-                    val remoteBackup = AppWebDav.getLatestBackupByTimestamp()
-                    if (remoteBackup == null) {
-                        AppLog.put("WebDAV上没有找到备份文件")
-                        return@withTimeoutOrNull true
-                    }
-
-                    val remoteTimestamp = Backup.getTimestampFromFileName(remoteBackup.displayName)
+                    // 读取远端数据变化时间戳（仅在真正的数据变化时更新，不受定时备份影响）
+                    val remoteDataChangeTime = AppWebDav.getRemoteDataChangeTime()
                     val localTimestamp = LocalConfig.lastDataChangeTime
 
-                    AppLog.put("检查WebDAV备份: 远端=${remoteBackup.displayName}, 远端时间戳=$remoteTimestamp, 本地时间戳=$localTimestamp")
+                    AppLog.put("检查WebDAV: 远端数据变化时间=$remoteDataChangeTime, 本地时间戳=$localTimestamp")
 
-                    if (remoteTimestamp > localTimestamp) {
-                        AppLog.put("远端备份更新，开始恢复: ${remoteBackup.displayName}")
-                        context.toastOnUi("正在从WebDAV恢复数据...")
+                    if (remoteDataChangeTime > localTimestamp) {
+                        // 远端有真正的数据变化，找到最新备份并恢复
+                        val remoteBackup = AppWebDav.getLatestBackupByTimestamp()
+                        if (remoteBackup != null) {
+                            AppLog.put("远端数据有更新，开始恢复: ${remoteBackup.displayName}")
+                            context.toastOnUi("正在从WebDAV恢复数据...")
 
-                        AppWebDav.restoreWebDav(remoteBackup.displayName)
+                            AppWebDav.restoreWebDav(remoteBackup.displayName)
 
-                        // 恢复成功后更新本地时间戳
-                        LocalConfig.lastDataChangeTime = remoteTimestamp
+                            // 恢复成功后更新本地时间戳
+                            LocalConfig.lastDataChangeTime = remoteDataChangeTime
 
-                        AppLog.put("WebDAV备份恢复完成")
-                        context.toastOnUi("数据恢复完成")
+                            AppLog.put("WebDAV备份恢复完成")
+                            context.toastOnUi("数据恢复完成")
+                        } else {
+                            AppLog.put("远端数据有更新但未找到备份文件")
+                        }
                     } else {
                         AppLog.put("本地数据已是最新，无需恢复")
                     }

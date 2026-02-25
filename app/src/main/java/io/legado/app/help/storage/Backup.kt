@@ -157,6 +157,9 @@ object Backup {
                     // 清理WebDAV上的旧备份文件
                     AppWebDav.deleteOldBackups()
 
+                    // 上传数据变化时间戳到WebDAV，供其他设备判断是否需要恢复
+                    AppWebDav.uploadDataChangeTime(timestamp)
+
                     AppLog.put("数据变化自动备份成功: $zipFileName")
                 } catch (e: Exception) {
                     AppLog.put("数据变化自动备份失败\n${e.localizedMessage}", e)

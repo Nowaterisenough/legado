@@ -42,6 +42,7 @@ object AppWebDav {
     private val bookProgressUrl get() = "${rootWebDavUrl}bookProgress/"
     private val exportsWebDavUrl get() = "${rootWebDavUrl}books/"
     private val bgWebDavUrl get() = "${rootWebDavUrl}background/"
+    private val dataChangeTimeUrl get() = "${rootWebDavUrl}dataChangeTime.txt"
 
     var authorization: Authorization? = null
         private set
@@ -156,6 +157,32 @@ object AppWebDav {
     }
 
     /**
+     * 上传数据变化时间戳到 WebDAV
+     * 仅在真正的数据变化（backupOnDataChange）时调用
+     */
+    suspend fun uploadDataChangeTime(timestamp: Long) {
+        authorization?.let {
+            WebDav(dataChangeTimeUrl, it).upload(
+                timestamp.toString().toByteArray(),
+                "text/plain"
+            )
+        }
+    }
+
+    /**
+     * 读取远端数据变化时间戳
+     * 用于判断远端是否有真正的数据变化（区别于定时备份）
+     */
+    suspend fun getRemoteDataChangeTime(): Long {
+        return kotlin.runCatching {
+            authorization?.let {
+                val bytes = WebDav(dataChangeTimeUrl, it).download()
+                String(bytes).trim().toLongOrNull() ?: 0L
+            } ?: 0L
+        }.getOrDefault(0L)
+    }
+
+    /**
      * 获取 WebDAV 上最新的备份（基于文件名中的时间戳）
      */
     suspend fun getLatestBackupByTimestamp(): WebDavFile? {
@@ -180,13 +207,6 @@ object AppWebDav {
                 val backupFiles = WebDav(rootWebDavUrl, auth).listFiles()
                     .filter { it.displayName.matches(Regex("backup_[^_]+_(\\d{4}_\\d{2}_\\d{2}_\\d{2}_\\d{2})\\.zip")) }
                     .sortedByDescending { Backup.getTimestampFromFileName(it.displayName) }
-
-                // 获取最新备份的时间戳并更新到本地
-                backupFiles.firstOrNull()?.let { latestBackup ->
-                    val latestTimestamp = Backup.getTimestampFromFileName(latestBackup.displayName)
-                    io.legado.app.help.config.LocalConfig.lastDataChangeTime = latestTimestamp
-                    AppLog.put("更新本地时间戳为最新备份: ${latestBackup.displayName}")
-                }
 
                 // 保留最新的，删除其他所有旧备份
                 backupFiles.drop(1).forEach { file ->
