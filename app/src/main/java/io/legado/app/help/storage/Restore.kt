@@ -150,11 +150,25 @@ object Restore {
         fileToListT<Bookmark>(path, "bookmark.json")?.let {
             appDb.bookmarkDao.insert(*it.toTypedArray())
         }
-        fileToListT<BookGroup>(path, "bookGroup.json")?.let {
-            appDb.bookGroupDao.insert(*it.toTypedArray())
+        fileToListT<BookGroup>(path, "bookGroup.json")?.let { list ->
+            val localGroups = appDb.bookGroupDao.all
+            val restoredIds = list.map { it.groupId }.toSet()
+            appDb.bookGroupDao.insert(*list.toTypedArray())
+            // 删除本地有但备份中没有的分组
+            localGroups.filter { it.groupId !in restoredIds }.let { toDelete ->
+                if (toDelete.isNotEmpty()) {
+                    appDb.bookGroupDao.delete(*toDelete.toTypedArray())
+                }
+            }
         }
-        fileToListT<BookSource>(path, "bookSource.json")?.let {
-            appDb.bookSourceDao.insert(*it.toTypedArray())
+        fileToListT<BookSource>(path, "bookSource.json")?.let { list ->
+            val localUrls = appDb.bookSourceDao.all.map { it.bookSourceUrl }.toSet()
+            val restoredUrls = list.map { it.bookSourceUrl }.toSet()
+            appDb.bookSourceDao.insert(*list.toTypedArray())
+            // 删除本地有但备份中没有的书源
+            (localUrls - restoredUrls).forEach { url ->
+                appDb.bookSourceDao.delete(url)
+            }
         } ?: run {
             val bookSourceFile = File(path, "bookSource.json")
             if (bookSourceFile.exists()) {
@@ -162,14 +176,28 @@ object Restore {
                 ImportOldData.importOldSource(json)
             }
         }
-        fileToListT<RssSource>(path, "rssSources.json")?.let {
-            appDb.rssSourceDao.insert(*it.toTypedArray())
+        fileToListT<RssSource>(path, "rssSources.json")?.let { list ->
+            val localUrls = appDb.rssSourceDao.all.map { it.sourceUrl }.toSet()
+            val restoredUrls = list.map { it.sourceUrl }.toSet()
+            appDb.rssSourceDao.insert(*list.toTypedArray())
+            // 删除本地有但备份中没有的RSS源
+            (localUrls - restoredUrls).forEach { url ->
+                appDb.rssSourceDao.delete(url)
+            }
         }
         fileToListT<RssStar>(path, "rssStar.json")?.let {
             appDb.rssStarDao.insert(*it.toTypedArray())
         }
-        fileToListT<ReplaceRule>(path, "replaceRule.json")?.let {
-            appDb.replaceRuleDao.insert(*it.toTypedArray())
+        fileToListT<ReplaceRule>(path, "replaceRule.json")?.let { list ->
+            val localRules = appDb.replaceRuleDao.all
+            val restoredIds = list.map { it.id }.toSet()
+            appDb.replaceRuleDao.insert(*list.toTypedArray())
+            // 删除本地有但备份中没有的替换规则
+            localRules.filter { it.id !in restoredIds }.let { toDelete ->
+                if (toDelete.isNotEmpty()) {
+                    appDb.replaceRuleDao.delete(*toDelete.toTypedArray())
+                }
+            }
         }
         fileToListT<SearchKeyword>(path, "searchHistory.json")?.let {
             appDb.searchKeywordDao.insert(*it.toTypedArray())
