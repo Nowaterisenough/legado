@@ -349,7 +349,7 @@ class ReadMangaActivity : VMBaseActivity<ActivityMangaBinding, ReadMangaViewMode
         networkChangedListener.register()
         networkChangedListener.onNetworkChanged = {
             // 当网络是可用状态且无需初始化时同步进度（初始化中已有同步进度逻辑）
-            if (AppConfig.syncBookProgressPlus && NetworkUtils.isAvailable() && !justInitData) {
+            if (AppConfig.syncBookProgressPlus && NetworkUtils.isAvailable() && !justInitData && ReadManga.inBookshelf) {
                 ReadManga.syncProgress({ progress -> sureNewProgress(progress) })
             }
         }
@@ -371,8 +371,10 @@ class ReadMangaActivity : VMBaseActivity<ActivityMangaBinding, ReadMangaViewMode
                 } else {
                     ReadManga.uploadProgress()
                 }
-                Backup.autoBack(this)
             }
+        }
+        if (!BuildConfig.DEBUG) {
+            Backup.autoBack(this)
         }
         ReadManga.cancelPreDownloadTask()
         networkChangedListener.unRegister()
