@@ -273,6 +273,11 @@ class MainViewModel(application: Application) : BaseViewModel(application) {
                             // 恢复成功后更新本地时间戳
                             LocalConfig.lastDataChangeTime = remoteDataChangeTime
 
+                            // 恢复备份后，同步WebDAV上的最新阅读进度
+                            if (AppConfig.syncBookProgress) {
+                                AppWebDav.downloadAllBookProgress()
+                            }
+
                             AppLog.put("WebDAV备份恢复完成")
                             context.toastOnUi("数据恢复完成")
                         } else {
